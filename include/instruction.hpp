@@ -1,5 +1,7 @@
-#include <iostream>
 
+#pragma once
+
+#include <iostream>
 struct Instruction
 {
 	enum struct Type
@@ -33,7 +35,7 @@ struct Instruction
 	}
 };
 
-std::ostream &operator<<(std::ostream &os, const Instruction &instruction)
+inline std::ostream &operator<<(std::ostream &os, const Instruction &instruction)
 {
 	os << "Instruction: ";
 	switch(instruction.type_)
@@ -63,7 +65,7 @@ std::ostream &operator<<(std::ostream &os, const Instruction &instruction)
 	
 	if(instruction.value_ != nullptr)
 	{
-		os << " Value: ";
+		os << ", Value: ";
 		for(int i = 0; i < instruction.numValues_; i++)
 			os << instruction.value_[i] << ", ";
 	}
