@@ -2,9 +2,11 @@
 #include <vector>
 #include <exception>
 #include <ostream>
-#include <string.h>
-#include <ctime>
 
+#include <string.h>
+#include <time.h>
+
+#define M_LOOP(x) for(int idx__ = 0; idx__ < x; idx__++)
 struct Instruction
 {
 	enum struct Type
@@ -13,14 +15,32 @@ struct Instruction
 	};
 	
 	Type type_;
-	int value_;
+	int *value_;
+	int numValues_;
 	
-	Instruction(Type type, int value = INT32_MAX)
+	Instruction(Type type, int *value = nullptr, int numValues = 0)
 	{
 		type_ = type;
 		value_ = value;
+		numValues_ = numValues;
+	}
+	
+	~Instruction()
+	{
+		if(value_ != nullptr) delete[] value_;
 	}
 };
+
+constexpr unsigned long hash(const char *str)
+{
+    unsigned long hash = 5381;
+    char c = *str;
+
+    while((c = *str++))
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+    return hash;
+}
 
 std::ostream &operator<<(std::ostream &os, const Instruction &instruction)
 {
@@ -50,7 +70,12 @@ std::ostream &operator<<(std::ostream &os, const Instruction &instruction)
 			break;
 	}
 	
-	if(instruction.value_ != INT32_MAX) os << " Value: " << instruction.value_;
+	if(instruction.value_ != nullptr)
+	{
+		os << " Value: ";
+		for(int i = 0; i < instruction.numValues_; i++)
+			os << instruction.value_[i] << ", ";
+	}
 	
 	return os;
 }
@@ -80,49 +105,104 @@ int main(int argc, char *argv[])
 	std::vector<Instruction> instructions;
 	
 	{
-		std::string current;
-		Instruction::Type currentType;
-		
-		char chr;
-		bool isInstruction = true;
-		
-		while((chr = fgetc(fp)))
+		auto getInstruction = [](const char *str) -> Instruction::Type
 		{
-			bool isEnd = chr == '\n' || chr == EOF;
-			
-			if(chr == ' ' || (isEnd && isInstruction))
+			switch(hash(str))
 			{
-				if(current == "push") currentType = Instruction::Type::push;
-				else if(current == "pop") currentType = Instruction::Type::pop;
-				else if(current == "add") currentType = Instruction::Type::add;
-				else if(current == "ifeq") currentType = Instruction::Type::ifeq;
-				else if(current == "jump") currentType = Instruction::Type::jump;
-				else if(current == "print") currentType = Instruction::Type::print;
-				else if(current == "dup") currentType = Instruction::Type::dup;
-				
-				isInstruction = chr != ' ';
-				
-				current.clear();
-			}
-			
-			switch(chr)
-			{
-				case EOF:
-				case '\n':
-					instructions.push_back(
-						Instruction(currentType, isInstruction ? INT32_MAX : atoi(current.c_str()))
-					);
-					
-					current.clear();
-					isInstruction = true;
-					break;
+				case hash("push"):
+					return Instruction::Type::push;
+				case hash("pop"):
+					return Instruction::Type::pop;
+				case hash("add"):
+					return Instruction::Type::add;
+				case hash("ifeq"):
+					return Instruction::Type::ifeq;
+				case hash("jump"):
+					return Instruction::Type::jump;
+				case hash("print"):
+					return Instruction::Type::print;
+				case hash("dup"):
+					return Instruction::Type::dup;
 				default:
-					current += chr;
-					break;
+					throw std::invalid_argument(std::string("Instruction type does not exist. Got: ") + str);
+			}
+		};
+		
+		fseek(fp, 0L, SEEK_END);
+		size_t fileSize = ftell(fp);
+		rewind(fp);
+		
+		char *buffer = new char[fileSize];
+		
+		// Copy file to buffer
+		char chr;
+		int index = 0;
+		while((chr = fgetc(fp)) != EOF) // Get new char and evaluate it to EOF. This should write NUL to buffer
+		{
+			buffer[index++] = chr;
+		}
+		char *next = nullptr;
+		char *first = strtok_r(buffer, "\n", &next);
+		
+		do
+		{
+			char *part;
+			char *posn = nullptr;
+			
+			//Loops over the string to find the amount of arguments, and cleans up trailing spaces
+			// int instructionLength = next - first;
+			int numArgs = 0;
+			char *instructionPtr = first;
+			while((chr = *instructionPtr++))
+			{
+				switch(chr)
+				{
+					case ' ':
+						if(*instructionPtr == '\0') // Remove trailing space
+						{
+							*(instructionPtr-1) = '\0';
+						}
+						else numArgs++;
+						break;
+					case ',':
+						if(*instructionPtr == '\0')
+						{
+							*(instructionPtr-1) = '\0';
+							break;
+						}
+						
+						if(*instructionPtr == ' ')
+						{
+							// Move everything to the right of instruction ptr one byte to the left (overwrite space)
+							memmove(instructionPtr, instructionPtr + 1, next - instructionPtr); 
+						}
+						
+						numArgs++;
+						break;
+				}
 			}
 			
-			if(chr == EOF) break;
+			// printf("Num Args: %i\n", numArgs);
+			
+			part = strtok_r(first, " ", &posn); // <- This give the name of the instruction
+			printf("[%s]\n", part);
+			
+			Instruction::Type type = getInstruction(part);
+			int *arguments = numArgs > 0 ? new int[numArgs] : nullptr;
+			printf("Num args: %i, ptr: %p\n", numArgs, (void *)arguments);
+			int idx = 0;
+			
+			part = strtok_r(nullptr, ",", &posn); // <- Then it becomes the arguments
+			while(part != nullptr)
+			{
+				printf("[%s]\n", part);
+				arguments[idx++] = strtol(part, NULL, 0); // This shouldn't really ever be called if there are no arguments, so it should be fine ??
+				part = strtok_r(nullptr, ",", &posn);
+			}
+			
+			instructions.push_back( Instruction( type, arguments, numArgs ) );
 		}
+		while((first = strtok_r(nullptr, "\n", &next)) != nullptr);
 	}
 	
 	fclose(fp);
