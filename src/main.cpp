@@ -6,30 +6,9 @@
 #include <string.h>
 #include <time.h>
 
+#include "instruction.hpp"
+
 #define M_LOOP(x) for(int idx__ = 0; idx__ < x; idx__++)
-struct Instruction
-{
-	enum struct Type
-	{
-		push, pop, add, ifeq, jump, print, dup
-	};
-	
-	Type type_;
-	int *value_;
-	int numValues_;
-	
-	Instruction(Type type, int *value = nullptr, int numValues = 0)
-	{
-		type_ = type;
-		value_ = value;
-		numValues_ = numValues;
-	}
-	
-	~Instruction()
-	{
-		if(value_ != nullptr) delete[] value_;
-	}
-};
 
 constexpr unsigned long hash(const char *str)
 {
@@ -40,44 +19,6 @@ constexpr unsigned long hash(const char *str)
         hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
 
     return hash;
-}
-
-std::ostream &operator<<(std::ostream &os, const Instruction &instruction)
-{
-	os << "Instruction: ";
-	switch(instruction.type_)
-	{
-		case Instruction::Type::push:
-			os << "push";
-			break;
-		case Instruction::Type::pop:
-			os << "pop";
-			break;
-		case Instruction::Type::add:
-			os << "add";
-			break;
-		case Instruction::Type::ifeq:
-			os << "ifeq";
-			break;
-		case Instruction::Type::jump:
-			os << "jump";
-			break;
-		case Instruction::Type::print:
-			os << "print";
-			break;
-		case Instruction::Type::dup:
-			os << "dup";
-			break;
-	}
-	
-	if(instruction.value_ != nullptr)
-	{
-		os << " Value: ";
-		for(int i = 0; i < instruction.numValues_; i++)
-			os << instruction.value_[i] << ", ";
-	}
-	
-	return os;
 }
 
 int str_cut(char *str, int begin, int len)
@@ -141,13 +82,13 @@ int main(int argc, char *argv[])
 		{
 			buffer[index++] = chr;
 		}
-		char *next = nullptr;
+		char *next = NULL;
 		char *first = strtok_r(buffer, "\n", &next);
 		
 		do
 		{
 			char *part;
-			char *posn = nullptr;
+			char *posn = NULL;
 			
 			//Loops over the string to find the amount of arguments, and cleans up trailing spaces
 			// int instructionLength = next - first;
@@ -192,17 +133,17 @@ int main(int argc, char *argv[])
 			printf("Num args: %i, ptr: %p\n", numArgs, (void *)arguments);
 			int idx = 0;
 			
-			part = strtok_r(nullptr, ",", &posn); // <- Then it becomes the arguments
-			while(part != nullptr)
+			part = strtok_r(NULL, ",", &posn); // <- Then it becomes the arguments
+			while(part != NULL)
 			{
 				printf("[%s]\n", part);
 				arguments[idx++] = strtol(part, NULL, 0); // This shouldn't really ever be called if there are no arguments, so it should be fine ??
-				part = strtok_r(nullptr, ",", &posn);
+				part = strtok_r(NULL, ",", &posn);
 			}
 			
 			instructions.push_back( Instruction( type, arguments, numArgs ) );
 		}
-		while((first = strtok_r(nullptr, "\n", &next)) != nullptr);
+		while((first = strtok_r(NULL, "\n", &next)) != NULL);
 	}
 	
 	fclose(fp);
