@@ -18,11 +18,17 @@ Instruction::Type getInstruction(const char *str)
 			return Instruction::Type::print;
 		case hash("dup"):
 			return Instruction::Type::dup;
+		case hash(":"):
+			return Instruction::Type::label;
 		default:
-			printf("3: %i, 4: %i\n", str[3], str[4]);
 			throw std::invalid_argument(std::string("Instruction type does not exist. Got: ") + str);
 	}
 };
+
+void validateArguments()
+{
+	
+}
 
 void parseInstructions(const char *filename, std::vector<Instruction> &instructions)
 {
@@ -65,7 +71,7 @@ void parseInstructions(const char *filename, std::vector<Instruction> &instructi
 					{
 						*(instructionPtr-1) = '\0';
 					}
-					else numArgs++;
+					else if(numArgs == 0) numArgs++; // Only counts first space as an argument
 					break;
 				case ',':
 					if(*instructionPtr == '\0')
@@ -82,6 +88,10 @@ void parseInstructions(const char *filename, std::vector<Instruction> &instructi
 					
 					numArgs++;
 					break;
+				case '#': // Comment
+					*(instructionPtr-1) = '\0'; // Replace '#' char to NULL
+					*instructionPtr = '\0'; // Stop next iteration of the loop
+					break;
 			}
 		}
 		
@@ -91,14 +101,40 @@ void parseInstructions(const char *filename, std::vector<Instruction> &instructi
 		printf("[%s]\n", part);
 		
 		Instruction::Type type = getInstruction(part);
-		int *arguments = numArgs > 0 ? new int[numArgs] : nullptr;
+		int64_t *arguments = numArgs > 0 ? new int64_t[numArgs] : nullptr;
 		int idx = 0;
 		
-		part = strtok_r(NULL, ",", &posn); // <- Then it becomes the arguments
-		while(part != NULL)
+		part = strtok_r(NULL, ",", &posn); // <- Then it gets the arguments
+		
+		while(part != NULL) // This shouldn't really ever be called if there are no arguments, so it should be fine ??
 		{
 			printf("[%s]\n", part);
-			arguments[idx++] = strtol(part, NULL, 0); // This shouldn't really ever be called if there are no arguments, so it should be fine ??
+			switch(type)
+			{
+				case Instruction::Type::jump:
+				case Instruction::Type::label:
+					arguments[idx++] = hash(part);
+					break;
+				// Be warned : this is going to be weird as fuck.
+				case Instruction::Type::print:
+				{
+					int partLength = strlen(part) + 1; 
+					char *str = new char[partLength];
+					memcpy(str, part, partLength);
+					
+					// Stores pointer in int64_t
+					// Keeps bit configuration intact, will be converted back to pointer when printed out
+					// Ex with 8 bit pointers :
+					// char * : 1001 0110 (0x96) <-> int64_t : 1001 0110 (-0x6A)
+					arguments[idx++] = *(int64_t *)(&str); 
+					
+					break;
+				}
+				default:
+					arguments[idx++] = strtol(part, NULL, 0); 
+					break;
+			}
+			
 			part = strtok_r(NULL, ",", &posn);
 		}
 		

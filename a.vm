@@ -1,4 +1,5 @@
 push 1258
 push 2
+print something else # "something else" is only one argument
 pop
 pop

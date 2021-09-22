@@ -2,18 +2,19 @@
 #pragma once
 
 #include <iostream>
+
 struct Instruction
 {
 	enum struct Type
 	{
-		push, pop, add, ifeq, jump, print, dup
+		push, pop, add, ifeq, jump, print, dup, label
 	};
 	
 	Type type_;
-	int *value_;
+	int64_t *value_; // Should be able to hold a pointer value
 	int numValues_;
 	
-	Instruction(Type type, int *value = nullptr, int numValues = 0)
+	Instruction(Type type, int64_t *value = nullptr, int numValues = 0)
 	{
 		type_ = type;
 		value_ = value;
@@ -31,7 +32,18 @@ struct Instruction
 	
 	~Instruction()
 	{
-		if(value_ != nullptr) delete[] value_;
+		if(value_ != nullptr)
+		{
+			if(type_ == Type::print)
+			{
+				for(int i =0; i < numValues_; i++)
+				{
+					delete[] (char *)value_[i];
+				}
+			}
+			
+			delete[] value_;
+		}
 	}
 };
 
@@ -60,6 +72,9 @@ inline std::ostream &operator<<(std::ostream &os, const Instruction &instruction
 			break;
 		case Instruction::Type::dup:
 			os << "dup";
+			break;
+		case Instruction::Type::label:
+			os << "label";
 			break;
 	}
 	
