@@ -10,39 +10,39 @@ struct Instruction
 		push, pop, add, ifeq, jump, print, dup, label
 	};
 	
-	Type type_;
-	int64_t *value_; // Should be able to hold a pointer value
-	int numValues_;
+	Type type;
+	int64_t *value; // Should be able to hold a pointer value
+	int numValues;
 	
 	Instruction(Type type, int64_t *value = nullptr, int numValues = 0)
 	{
-		type_ = type;
-		value_ = value;
-		numValues_ = numValues;
+		this->type = type;
+		this->value = value;
+		this->numValues = numValues;
 	}
 	
 	Instruction(Instruction &&other)
 	{
-		type_ = other.type_;
-		value_ = other.value_;
-		numValues_ = other.numValues_;
+		type = other.type;
+		value = other.value;
+		numValues = other.numValues;
 		
-		other.value_ = nullptr;
+		other.value = nullptr;
 	}
 	
 	~Instruction()
 	{
-		if(value_ != nullptr)
+		if(value != nullptr)
 		{
-			if(type_ == Type::print)
+			if(type == Type::print)
 			{
-				for(int i =0; i < numValues_; i++)
+				for(int i =0; i < numValues; i++)
 				{
-					delete[] (char *)value_[i];
+					delete[] (char *)value[i];
 				}
 			}
 			
-			delete[] value_;
+			delete[] value;
 		}
 	}
 };
@@ -50,7 +50,7 @@ struct Instruction
 inline std::ostream &operator<<(std::ostream &os, const Instruction &instruction)
 {
 	os << "Instruction: ";
-	switch(instruction.type_)
+	switch(instruction.type)
 	{
 		case Instruction::Type::push:
 			os << "push";
@@ -78,11 +78,11 @@ inline std::ostream &operator<<(std::ostream &os, const Instruction &instruction
 			break;
 	}
 	
-	if(instruction.value_ != nullptr)
+	if(instruction.value != nullptr)
 	{
 		os << ", Value: ";
-		for(int i = 0; i < instruction.numValues_; i++)
-			os << instruction.value_[i] << ", ";
+		for(int i = 0; i < instruction.numValues; i++)
+			os << instruction.value[i] << ", ";
 	}
 	
 	return os;

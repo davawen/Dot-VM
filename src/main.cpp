@@ -36,9 +36,23 @@ int main(int argc, char *argv[])
 	
 	parseInstructions(argv[1], instructions);
 	
+	printf("\n[STARTING EXECUTION FROM HERE]\n\n");
+	
 	for(auto &it : instructions)
 	{
-		std::cout << it << '\n';
+		// std::cout << it << '\n';
+		
+		switch(it.type)
+		{
+			case Instruction::Type::print:
+				for(int i = 0; i < it.numValues; i++)
+				{
+					printf("%s", reinterpret_cast<char *>(it.value[i]));
+				}
+				break;
+			default:
+				break;
+		}
 	}
 	
 	// int stack[10000];

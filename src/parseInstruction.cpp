@@ -88,6 +88,49 @@ void parseInstructions(const char *filename, std::vector<Instruction> &instructi
 					
 					numArgs++;
 					break;
+				case '\\':
+				{
+					switch(*instructionPtr)
+					{
+						case 'a':
+							*instructionPtr = '\a';
+							break;
+						case 'b':
+							*instructionPtr = '\b';
+							break;
+						case 'f':
+							*instructionPtr = '\f';
+							break;
+						case 'n':
+							*instructionPtr = '\n';
+							break;
+						case 'r':
+							*instructionPtr = '\r';
+							break;
+						case 't':
+							*instructionPtr = '\t';
+							break;
+						case 'v':
+							*instructionPtr = '\v';
+							break;
+						case '?':
+							*instructionPtr = '\?';
+							break;
+						case '\\': // Simply avoid warning
+							break;
+						default:
+							printf("\x1b[31m[Warning]\x1b[0m : uknown escape sequence : \\%c", *instructionPtr);
+							goto escape;
+							break;
+					}
+					
+					// Move instruction ptr one byte to the left (overwrite backward slash)
+					memmove(instructionPtr - 1, instructionPtr, next - instructionPtr);
+					
+					escape:
+					
+					break;
+				}
 				case '#': // Comment
 					printf("\x1b[36m[Comment] : %s\x1b[0m\n", instructionPtr);
 					*(instructionPtr-1) = '\0'; // Replace '#' char to NULL
@@ -120,14 +163,14 @@ void parseInstructions(const char *filename, std::vector<Instruction> &instructi
 				case Instruction::Type::print:
 				{
 					int partLength = strlen(part) + 1; 
-					char *str = new char[partLength];
-					memcpy(str, part, partLength);
+					char *strPtr = new char[partLength];
+					memcpy(strPtr, part, partLength);
 					
 					// Stores pointer in int64_t
 					// Keeps bit configuration intact, will be converted back to pointer when printed out
 					// Ex with 8 bit pointers :
 					// char * : 1001 0110 (0x96) <-> int64_t : 1001 0110 (-0x6A)
-					arguments[idx++] = *(int64_t *)(&str); 
+					arguments[idx++] = reinterpret_cast<int64_t>(strPtr); 
 					
 					break;
 				}
