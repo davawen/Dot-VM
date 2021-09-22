@@ -67,7 +67,7 @@ void parseInstructions(const char *filename, std::vector<Instruction> &instructi
 			switch(chr)
 			{
 				case ' ':
-					if(*instructionPtr == '\0') // Remove trailing space
+					if(*instructionPtr == '\0' || *instructionPtr == '#') // Remove trailing space
 					{
 						*(instructionPtr-1) = '\0';
 					}
@@ -89,6 +89,7 @@ void parseInstructions(const char *filename, std::vector<Instruction> &instructi
 					numArgs++;
 					break;
 				case '#': // Comment
+					printf("\x1b[36m[Comment] : %s\x1b[0m\n", instructionPtr);
 					*(instructionPtr-1) = '\0'; // Replace '#' char to NULL
 					*instructionPtr = '\0'; // Stop next iteration of the loop
 					break;
@@ -98,7 +99,7 @@ void parseInstructions(const char *filename, std::vector<Instruction> &instructi
 		// printf("Num Args: %i\n", numArgs);
 		
 		part = strtok_r(first, " ", &posn); // <- This give the name of the instruction
-		printf("[%s]\n", part);
+		printf("\x1b[1m\x1b[93m[%s]\x1b[0m\n", part);
 		
 		Instruction::Type type = getInstruction(part);
 		int64_t *arguments = numArgs > 0 ? new int64_t[numArgs] : nullptr;
@@ -108,7 +109,7 @@ void parseInstructions(const char *filename, std::vector<Instruction> &instructi
 		
 		while(part != NULL) // This shouldn't really ever be called if there are no arguments, so it should be fine ??
 		{
-			printf("[%s]\n", part);
+			printf("\x1b[33m[%s]\x1b[0m\n", part);
 			switch(type)
 			{
 				case Instruction::Type::jump:
