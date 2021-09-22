@@ -1,8 +1,10 @@
 #include <cstdio>
 #include <iostream>
+#include <stdexcept>
 #include <vector>
 #include <exception>
 #include <ostream>
+#include <algorithm>
 
 #include <cstring>
 #include <ctime>
@@ -37,6 +39,9 @@ int main(int argc, char *argv[])
 	
 	parseInstructions(argv[1], instructions);
 	
+	printf("\n");
+	std::for_each(instructions.begin(), instructions.end(), [](Instruction &ins){ std::cout << ins << '\n'; });
+
 	printf("\n[STARTING EXECUTION FROM HERE]\n\n");
 
 	constexpr int STACK_SIZE = 10000;
@@ -48,14 +53,16 @@ int main(int argc, char *argv[])
 
 	auto fatalErr = [](const char *str) -> void
 	{
-		printf("\x1b[31mFatal error: %s.\n", str);
+		printf("\x1b[41mFatal error: %s.\n", str);
+		throw std::runtime_error(str);
 	};
 
 	auto warningErr = [](const char *str) -> void
 	{
-		printf("\x1b[41mWarning: %s.\n", str);
+		printf("\x1b[43mWarning: %s.\n", str);
 	};
-	
+
+
 	for(auto iterator = instructions.begin(); iterator != instructions.end(); iterator++)
 	{
 		auto &it = *iterator;
@@ -109,6 +116,33 @@ int main(int argc, char *argv[])
 					printf("%s", reinterpret_cast<char *>(it.value[i]));
 				}
 				break;
+			case Instruction::Type::ifeq: // Only evaluates next instruction if condition is true
+				// ifeq [comparator],[value]
+				
+				break;
+			case Instruction::Type::jump:
+			{
+				// Find matching label with a linear search
+				// Efficicency is shit
+				// Labels should be stored in their own vector
+				
+				auto match = instructions.end();
+				for(auto itlabel = instructions.begin(); itlabel != instructions.end(); itlabel++)
+				{
+					if(itlabel->type != Instruction::Type::label) continue;
+
+					if(*itlabel->value == *it.value) match = itlabel;
+				}
+
+				if(match == instructions.end())
+				{
+					warningErr("Label does not exists."); // This should be checked at "compile" time
+					break;
+				}
+				
+				iterator = match;
+				break;
+			}
 			default:
 				break;
 		}
