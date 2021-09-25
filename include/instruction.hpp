@@ -38,7 +38,7 @@ struct Instruction
 			{
 				for(int i =0; i < numValues; i++)
 				{
-					delete[] (char *)value[i];
+					delete[] reinterpret_cast<char *>(value[i]);
 				}
 			}
 			
