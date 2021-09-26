@@ -47,14 +47,14 @@ They support escape sequences in the form of : `\a`, `\b`, `\f`, `\n`, `\r`, `\t
 ### **Registers**
 Registers are 64 bit wide variables for storing data, there are currently 4 :
 ```assembly
-reg ; General purpose register
-eax ; Arithmetic register
-sp ;  Top of the stack
+reg  ; General purpose register
+eax  ; Arithmetic register
+sp   ;  Top of the stack
 void ; Empty register
 ``` 
 Values of registers are acessed through the dollar `$` operator :
 ```assembly
-reg ; Pointer to 'reg'
+reg  ; Pointer to 'reg'
 $reg ; Value of 'reg'
 ```
 
@@ -74,35 +74,87 @@ More will be explained in the **Functions** header.
 
 ### **Instructions**
 
-The language is (currently) composed of these 8 instructions :
+The language is (currently) composed of these 18 instructions :
 -	Stack manipulation : `push` and `pop`
 	```assembly
 	push [value...]
 	; Pushes a/multiple value to the stack
     
 		push 1968, 12 ; Pushes 1968 to the stack, then pushes 12
-		push $reg ; Pushes the value of register 'reg' to the stack
+		push $reg     ; Pushes the value of register 'reg' to the stack
   
 	pop
 	pop [register]
 	pop [register], [offset]
 	; Removes a value from the stack at a given offset and optionally store it somewhere
 
-		pop ; Removes the top of the stack
+		pop         ; Removes the top of the stack
 		pop void, 2 ; Removes the third element from the stack
-		; This means `pop` is equivalent to `pop void, 0`
+		            ; This means `pop` is equivalent to `pop void, 0`
 		
 		pop reg ; Removes the top of the stack and stores it in register 'reg'
 	```
--	Arithmethic instructions (will probably get expanded) : `add`
+-	Arithmethic instructions : `add`, `sub`, `mul` and `div`
 	```assembly
 	add
-	add [value 1],[value 2]
-	; Adds two values together, and returns the result in 'eax'
+	add [value 1], [value 2]
+	; Adds two values together, and pushes the result to the stack
     
-		add ; Adds the first and second values from the stack
+		add            ; Pops the first and second values from the stack and adds them together
 		add $reg, $eax ; Adds the value from 'reg' and 'eax'
-		; Note that the value from 'eax' will be lost
+	
+	sub
+	sub [value 1], [value 2]
+	; Substracts the first value by the second value, and pushes the result to the stack
+	; Works in the same way as the 'add' instruction
+
+	mul
+	mul [value 1], [value 2]
+	; Multiply two values together, and pushes the result to the stack
+	; Works in the same way as the 'add' instruction
+	
+	div
+	div [value 1], [value 2]
+	; Divide the first value by the second value, and pushes the result to the stack
+	; Works in the same way as the 'add' instruction
+	```
+-	Bitwise instructions : `and`, `or`, `xor`, `not`, `lshift`, `rshift`
+	```assembly
+	and
+	and [value 1], [value 2]
+	; ANDS two values together, and pushes the result to the stack
+
+		and      ; Pops the first and second value from the stack, and ANDs them
+		and 7, 4 ; Pushes 4 to the stack
+	
+	or
+	or [value 1], [value 2]
+	; ORs two values together, and pushes the result to the stack
+	; Works in the same way as the 'and' instruction
+
+	xor
+	xor [value 1], [value 2]
+	; XORs two values together, and pushes the result to the stack
+	; Works in the same way as the 'xor' instruction
+
+	not
+	not [value]
+	; Flips the bits of a value, and pushes the result to the stack
+
+		not      ; Pops the top of the stack, flips it and pushes it back
+		not $eax ; Flips the bits of 'eax'
+	
+	lshift [value]
+	lshift [value 1], [value 2]
+	; Shifts the bit of a value to the left by the given amount, and pushes the result to the stack
+
+		lshift 2     ; Pops the top of the stack, left shifts it by two and pushes it back
+		lshift 12, 3 ; Pushes 96 to the stack
+	
+	rshift [value]
+	rshift [value 1], [value 2]
+	; Shifts the bit of a value to the right by the given amount, and pushes the result to the stack
+	; Works in the same way as the 'lshift' instruction
 	```
 -	Register manipulation : `mov`
 	```assembly
@@ -110,8 +162,8 @@ The language is (currently) composed of these 8 instructions :
 	; Moves a value to a register
     
 		mov reg, $eax ; Moves the value of 'eax' to 'reg'
-		mov sp, 20 ; Changes the value of the top of the stack to 20
-		; Equivalent to : `pop` ; `push 20`
+		mov sp, 20    ; Changes the value of the top of the stack to 20
+		; Equivalent to : `pop` and `push 20`
 	```
 -	Runtime manipulation : `:`, `jump`, `ifeq` and `call`
 	```assembly
@@ -126,8 +178,8 @@ The language is (currently) composed of these 8 instructions :
 
 		jump label ; Jumps to the label 'label'
 
-	ifeq [condition], [value], [value]
-	; Compares two values together based on the given condition
+	ifeq [operator], [value], [value]
+	; Compares two values together based on the given operator
 	; Skips the next instruction if the condition is false
 
 		ifeq le, $eax, 10
@@ -175,18 +227,8 @@ Here is an exemple function :
 	; Add the first and second value
 	add
 	
-	; Remove them from the stack
-	pop
-	pop
-	
-	; Push back the value
-	push $eax
-	
-	; Repeat
+	; Adds the result with the third value
 	add
-	pop
-	pop
-	push $eax
 	
 	; Jump back to the call statement
 	jump $$
