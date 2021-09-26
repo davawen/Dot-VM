@@ -38,17 +38,104 @@ void parseInstructions(const char *filename, std::vector<Instruction> &instructi
 	size_t fileSize = ftell(fp);
 	rewind(fp);
 	
+	// Initialize buffer to NULL
 	char *buffer = new char[fileSize + 1];
-	
-	// Copy file to buffer
+	memset(buffer, '\0', fileSize + 1);
+
 	char chr;
-	int index = 0;
-	while((chr = fgetc(fp)) != EOF) // Get new char and check if we reached end of file
+	// Copy file to buffer
 	{
-		buffer[index++] = chr;
+		// Preliminary parsing
+		// Remove duplicate spaces and comments
+		// Evaluate escape sequences
+		bool wasBlank = false, inQuotation = false, inComment = false, startOfLine = false;
+		
+		int index = 0;
+		while((chr = fgetc(fp)) != EOF) // Get new char and check if we reached end of file
+		{
+			bool escaped = false;
+
+			// Escape characters
+			if(chr == '\\')
+			{
+				chr = fgetc(fp);
+
+				if(chr == EOF) break;
+				
+				escaped = true;
+				switch(chr)
+				{
+					case 'a':
+						chr = '\a';
+						break;
+					case 'b':
+						chr = '\b';
+						break;
+					case 'f':
+						chr = '\f';
+						break;
+					case 'n':
+						chr = '\n';
+						break;
+					case 'r':
+						chr = '\r';
+						break;
+					case 't':
+						chr = '\t';
+						break;
+					case 'v':
+						chr = '\v';
+						break;
+					case '\"':
+						chr = '\"';
+						break;
+					case '?':
+						chr = '\?';
+						break;
+					case '\\': // chr is already a backslash
+						break;
+					default:
+						printf("\x1b[31m[Warning]\x1b[0m : uknown escape sequence : \\%c", chr);
+						break;
+				}
+			}
+		
+			if(chr == ';' && !inQuotation)
+			{
+				inComment = true;
+			}
+			else if(chr == '\n' && !escaped)
+			{
+				inComment = false;
+				
+				startOfLine = true;
+
+				buffer[index++] = chr;
+				continue;
+			}
+
+			if(chr == '\"' && !inComment && !escaped)
+			{
+				inQuotation = !inQuotation;
+				continue;
+			}
+
+			if(!inQuotation && !inComment)
+			{
+				bool isBlank = isblank(chr);
+
+				if(isBlank && (wasBlank || startOfLine)) continue;
+				else if(isBlank && !wasBlank) wasBlank = true;
+				else wasBlank = false;
+								
+				startOfLine = false;
+				buffer[index++] = chr;
+			}
+			else if(inQuotation) buffer[index++] = chr;
+		}
+
+		// buffer[index] = '\0';
 	}
-	
-	buffer[index] = '\0';
 	
 	char *next = NULL;
 	char *first = strtok_r(buffer, "\n", &next);
@@ -67,7 +154,7 @@ void parseInstructions(const char *filename, std::vector<Instruction> &instructi
 			switch(chr)
 			{
 				case ' ':
-					if(*instructionPtr == '\0' || *instructionPtr == '#') // Remove trailing space
+					if(*instructionPtr == '\0') // Remove trailing space
 					{
 						*(instructionPtr-1) = '\0';
 					}
@@ -88,54 +175,54 @@ void parseInstructions(const char *filename, std::vector<Instruction> &instructi
 					
 					numArgs++;
 					break;
-				case '\\':
-				{
-					switch(*instructionPtr)
-					{
-						case 'a':
-							*instructionPtr = '\a';
-							break;
-						case 'b':
-							*instructionPtr = '\b';
-							break;
-						case 'f':
-							*instructionPtr = '\f';
-							break;
-						case 'n':
-							*instructionPtr = '\n';
-							break;
-						case 'r':
-							*instructionPtr = '\r';
-							break;
-						case 't':
-							*instructionPtr = '\t';
-							break;
-						case 'v':
-							*instructionPtr = '\v';
-							break;
-						case '?':
-							*instructionPtr = '\?';
-							break;
-						case '\\': // Simply avoid warning
-							break;
-						default:
-							printf("\x1b[31m[Warning]\x1b[0m : uknown escape sequence : \\%c", *instructionPtr);
-							goto escape;
-							break;
-					}
-					
-					// Move instruction ptr one byte to the left (overwrite backward slash)
-					memmove(instructionPtr - 1, instructionPtr, next - instructionPtr);
-					
-					escape:
-					
-					break;
-				}
-				case '#': // Comment
-					printf("\x1b[36m[Comment] : %s\x1b[0m\n", instructionPtr);
-					*(instructionPtr-1) = '\0'; // Replace '#' char to NULL
-					*instructionPtr = '\0'; // Stop next iteration of the loop
-					break;
+				// case '\\':
+				// {
+				// 	switch(*instructionPtr)
+				// 	{
+				// 		case 'a':
+				// 			*instructionPtr = '\a';
+				// 			break;
+				// 		case 'b':
+				// 			*instructionPtr = '\b';
+				// 			break;
+				// 		case 'f':
+				// 			*instructionPtr = '\f';
+				// 			break;
+				// 		case 'n':
+				// 			*instructionPtr = '\n';
+				// 			break;
+				// 		case 'r':
+				// 			*instructionPtr = '\r';
+				// 			break;
+				// 		case 't':
+				// 			*instructionPtr = '\t';
+				// 			break;
+				// 		case 'v':
+				// 			*instructionPtr = '\v';
+				// 			break;
+				// 		case '?':
+				// 			*instructionPtr = '\?';
+				// 			break;
+				// 		case '\\': // Simply avoid warning
+				// 			break;
+				// 		default:
+				// 			printf("\x1b[31m[Warning]\x1b[0m : uknown escape sequence : \\%c", *instructionPtr);
+				// 			goto escape;
+				// 			break;
+				// 	}
+				// 	
+				// 	// Move instruction ptr one byte to the left (overwrite backward slash)
+				// 	memmove(instructionPtr - 1, instructionPtr, next - instructionPtr);
+				// 	
+				// 	escape:
+				// 	
+				// 	break;
+				// }
+				// case '#': // Comment
+				// 	printf("\x1b[36m[Comment] : %s\x1b[0m\n", instructionPtr);
+				// 	*(instructionPtr-1) = '\0'; // Replace '#' char to NULL
+				// 	*instructionPtr = '\0'; // Stop next iteration of the loop
+				// 	break;
 			}
 		}
 		

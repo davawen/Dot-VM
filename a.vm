@@ -1,3 +1,4 @@
-: label
-print i likee\n
-jump label
+: .start ; Program starts here
+	push        10 ; lots of spaces
+
+	print "String   \n" ; This shouldn't print the quotation marks or the literal

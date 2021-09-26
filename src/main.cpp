@@ -39,8 +39,11 @@ int main(int argc, char *argv[])
 	
 	parseInstructions(argv[1], instructions);
 	
+
 	printf("\n");
 	std::for_each(instructions.begin(), instructions.end(), [](Instruction &ins){ std::cout << ins << '\n'; });
+	
+	//return 0;
 
 	printf("\n[STARTING EXECUTION FROM HERE]\n\n");
 
