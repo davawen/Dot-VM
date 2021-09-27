@@ -81,6 +81,12 @@ void parse_instructions(const char *filename, std::vector<Instruction> &instruct
 				if(chr == EOF) break;
 				
 				escaped = true;
+				/*
+					TODO: 
+						Putting escape sequences here messes everything later during tokenization
+						
+						They should be put at the end of the lexer, or shoudl be delt with during runtime / compilation
+				*/
 				switch(chr)
 				{
 					case 'a':
@@ -132,12 +138,6 @@ void parse_instructions(const char *filename, std::vector<Instruction> &instruct
 				continue;
 			}
 
-			if(chr == '\"' && !inComment && !escaped)
-			{
-				inQuotation = !inQuotation;
-				continue;
-			}
-
 			if(!inQuotation && !inComment)
 			{
 				bool isBlank = isblank(chr);
@@ -150,6 +150,11 @@ void parse_instructions(const char *filename, std::vector<Instruction> &instruct
 				buffer[index++] = chr;
 			}
 			else if(inQuotation) buffer[index++] = chr;
+			
+			if(chr == '\"' && !inComment && !escaped)
+			{
+				inQuotation = !inQuotation;
+			}
 		}
 
 		// buffer[index] = '\0';
@@ -193,54 +198,6 @@ void parse_instructions(const char *filename, std::vector<Instruction> &instruct
 					
 					numArgs++;
 					break;
-				// case '\\':
-				// {
-				// 	switch(*instructionPtr)
-				// 	{
-				// 		case 'a':
-				// 			*instructionPtr = '\a';
-				// 			break;
-				// 		case 'b':
-				// 			*instructionPtr = '\b';
-				// 			break;
-				// 		case 'f':
-				// 			*instructionPtr = '\f';
-				// 			break;
-				// 		case 'n':
-				// 			*instructionPtr = '\n';
-				// 			break;
-				// 		case 'r':
-				// 			*instructionPtr = '\r';
-				// 			break;
-				// 		case 't':
-				// 			*instructionPtr = '\t';
-				// 			break;
-				// 		case 'v':
-				// 			*instructionPtr = '\v';
-				// 			break;
-				// 		case '?':
-				// 			*instructionPtr = '\?';
-				// 			break;
-				// 		case '\\': // Simply avoid warning
-				// 			break;
-				// 		default:
-				// 			printf("\x1b[31m[Warning]\x1b[0m : uknown escape sequence : \\%c", *instructionPtr);
-				// 			goto escape;
-				// 			break;
-				// 	}
-				// 	
-				// 	// Move instruction ptr one byte to the left (overwrite backward slash)
-				// 	memmove(instructionPtr - 1, instructionPtr, next - instructionPtr);
-				// 	
-				// 	escape:
-				// 	
-				// 	break;
-				// }
-				// case '#': // Comment
-				// 	printf("\x1b[36m[Comment] : %s\x1b[0m\n", instructionPtr);
-				// 	*(instructionPtr-1) = '\0'; // Replace '#' char to NULL
-				// 	*instructionPtr = '\0'; // Stop next iteration of the loop
-				// 	break;
 			}
 		}
 		
@@ -260,34 +217,77 @@ void parse_instructions(const char *filename, std::vector<Instruction> &instruct
 		
 		while(part != NULL) // This shouldn't really ever be called if there are no arguments, so it should be fine ??
 		{
+			bool isString = false;
+			int partLength;
+			
+			// TODO: Move escape sequences somewhere else to make this work
+			if(part[0] == '\"') // overwrite quotation marks if it's a string
+			{
+				part++;
+				char *ptr = part;
+				while(*(ptr++ + 2)); // iterate until before NULL character
+				
+				while(*ptr != '\"') // in case a , is in the string
+				{
+					char *newPart = strtok_r(NULL, ",", &posn);
+					
+					if(newPart == NULL)
+					{
+						throw std::runtime_error("Lexer Error : non-terminated string");	
+					}
+					
+					part = strcat(part, newPart);
+					
+					char *ptr = part;
+					while(*(ptr++ + 2)); // iterate until before NULL character
+				}
+				*(ptr) = '\0'; // reduce length by 1
+				
+				partLength = ptr - part;
+				isString = true;
+				
+				arguments[idx].type = Value::Type::string;
+			}
+			else // TODO: deal with register values
+			{
+				partLength = strlen(part);
+				
+				arguments[idx].type = Value::Type::value;
+			}
+			
 			printf("\x1b[33m[%s]\x1b[0m\n", part);
 			switch(type)
 			{
 				case Instruction::Type::jump:
 				case Instruction::Type::label:
-					arguments[idx++] = hash(part);
+					arguments[idx] = hash(part);
 					break;
 				// Be warned : this is going to be weird as fuck.
 				case Instruction::Type::print:
-				{
-					int partLength = strlen(part) + 1; 
-					char *strPtr = new char[partLength];
-					memcpy(strPtr, part, partLength);
-					
-					// Stores pointer in int64_t
-					// Keeps bit configuration intact, will be converted back to pointer when printed out
-					// Ex with 8 bit pointers :
-					// char * : 1001 0110 (0x96) <-> int64_t : 1001 0110 (-0x6A)
-					arguments[idx++] = reinterpret_cast<int64_t>(strPtr); 
+					if(isString)
+					{
+						char *strPtr = new char[partLength];
+						memcpy(strPtr, part, partLength);
+						
+						// Stores pointer in int64_t
+						// Keeps bit configuration intact, will be converted back to pointer when printed out
+						// Ex with 8 bit pointers :
+						// char * : 1001 0110 (0x96) <-> int64_t : 1001 0110 (-0x6A)
+						arguments[idx] = reinterpret_cast<int64_t>(strPtr); 
+					}
+					else
+					{
+						arguments[idx] = strtoll(part, NULL, 0);
+					}
 					
 					break;
-				}
 				default:
-					arguments[idx++] = strtol(part, NULL, 0); 
+					arguments[idx] = strtoll(part, NULL, 0); 
 					break;
 			}
 			
 			part = strtok_r(NULL, ",", &posn);
+			idx++;
 		}
 		
 		printf("Num args: %i, ptr: %p\n", numArgs, (void *)arguments);

@@ -1,4 +1,4 @@
 : .start ; Program starts here
-	push        10 ; lots of spaces
+	push 10
 
-	print "String ",20,"\n" ; This shouldn't print the quotation marks or the literal
+	print "String ",20

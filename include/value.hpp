@@ -15,6 +15,12 @@ struct Value
 	
 	int64_t val;
 	
+	Value(Type type = Type::value, int64_t val = 0)
+	{
+		this->type = type;
+		this->val = val;
+	}
+	
 	int64_t operator=(int64_t val)
 	{
 		this->val = val;
