@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 	// Parse file
 	std::vector<Instruction> instructions;
 	
-	parseInstructions(argv[1], instructions);
+	parse_instructions(argv[1], instructions);
 	
 
 	printf("\n");

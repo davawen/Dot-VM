@@ -1,6 +1,6 @@
 #include "parseInstruction.hpp"
 
-Instruction::Type getInstruction(const char *str)
+Instruction::Type get_instruction_type(const char *str)
 {
 	switch(hash(str))
 	{
@@ -25,12 +25,12 @@ Instruction::Type getInstruction(const char *str)
 	}
 };
 
-void validateArguments()
-{
+// void validateArguments()
+// {
 	
-}
+// }
 
-void parseInstructions(const char *filename, std::vector<Instruction> &instructions)
+void parse_instructions(const char *filename, std::vector<Instruction> &instructions)
 {
 	FILE *fp = fopen(filename, "r");
 	
@@ -231,7 +231,7 @@ void parseInstructions(const char *filename, std::vector<Instruction> &instructi
 		part = strtok_r(first, " ", &posn); // <- This give the name of the instruction
 		printf("\x1b[1m\x1b[93m[%s]\x1b[0m\n", part);
 		
-		Instruction::Type type = getInstruction(part);
+		Instruction::Type type = get_instruction_type(part);
 		int64_t *arguments = numArgs > 0 ? new int64_t[numArgs] : nullptr;
 		int idx = 0;
 		

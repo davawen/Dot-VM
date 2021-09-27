@@ -8,6 +8,6 @@
 #include "hash.hpp"
 #include "instruction.hpp"
 
-Instruction::Type getInstruction(const char *str);
+Instruction::Type get_instruction_type(const char *str);
 
-void parseInstructions(const char *filename, std::vector<Instruction> &instructions);
+void parse_instructions(const char *filename, std::vector<Instruction> &instructions);
