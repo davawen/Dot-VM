@@ -7,6 +7,7 @@
 
 #include "hash.hpp"
 #include "instruction.hpp"
+#include "value.hpp"
 
 Instruction::Type get_instruction_type(const char *str);
 

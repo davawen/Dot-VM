@@ -8,6 +8,7 @@
 
 #include <cstring>
 #include <ctime>
+#include <cinttypes>
 
 #include "instruction.hpp"
 #include "parseInstruction.hpp"
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
 				for(int i = 0; i < it.numValues; i++)
 				{
 					sp++;	
-					*sp = it.value[i];
+					*sp = it.value[i].val;
 				}
 				break;
 			case Instruction::Type::pop:
@@ -103,20 +104,14 @@ int main(int argc, char *argv[])
 				reg = *sp;
 				sp--;
 				break;
-			case Instruction::Type::dup:
-				// Duplicates the value of top of the stack
-				sp++;
-				*sp = *(sp-1);
-				break;
 			case Instruction::Type::print:
-				if(it.numValues == 0) // Print register
-				{
-					printf("%i\n", reg);
-				}
-
 				for(int i = 0; i < it.numValues; i++)
 				{
-					printf("%s", reinterpret_cast<char *>(it.value[i]));
+					// Will add support for more types later
+					if(it.value[i].type == Value::Type::string)
+						printf("%s", reinterpret_cast<char *>(it.value[i].val));
+					else
+					 	printf("%" PRId64, it.value[i].val);
 				}
 				break;
 			case Instruction::Type::ifeq: // Only evaluates next instruction if condition is true
@@ -134,7 +129,7 @@ int main(int argc, char *argv[])
 				{
 					if(itlabel->type != Instruction::Type::label) continue;
 
-					if(*itlabel->value == *it.value) match = itlabel;
+					if(itlabel->value->val == it.value->val) match = itlabel;
 				}
 
 				if(match == instructions.end())

@@ -10,16 +10,34 @@ Instruction::Type get_instruction_type(const char *str)
 			return Instruction::Type::pop;
 		case hash("add"):
 			return Instruction::Type::add;
-		case hash("ifeq"):
-			return Instruction::Type::ifeq;
-		case hash("jump"):
-			return Instruction::Type::jump;
-		case hash("print"):
-			return Instruction::Type::print;
-		case hash("dup"):
-			return Instruction::Type::dup;
+		case hash("sub"):
+			return Instruction::Type::sub;
+		case hash("mul"):
+			return Instruction::Type::mul;
+		case hash("div"):
+			return Instruction::Type::div;
+		case hash("and"):
+			return Instruction::Type::and_;
+		case hash("or"):
+			return Instruction::Type::or_;
+		case hash("xor"):
+			return Instruction::Type::xor_;
+		case hash("not"):
+			return Instruction::Type::not_;
+		case hash("lshift"):
+			return Instruction::Type::lshift;
+		case hash("rshift"):
+			return Instruction::Type::rshift;
+		case hash("mov"):
+			return Instruction::Type::mov;
 		case hash(":"):
 			return Instruction::Type::label;
+		case hash("jump"):
+			return Instruction::Type::jump;
+		case hash("ifeq"):
+			return Instruction::Type::ifeq;
+		case hash("print"):
+			return Instruction::Type::print;
 		default:
 			throw std::invalid_argument(std::string("Instruction type does not exist. Got: ") + str);
 	}
@@ -229,10 +247,13 @@ void parse_instructions(const char *filename, std::vector<Instruction> &instruct
 		// printf("Num Args: %i\n", numArgs);
 		
 		part = strtok_r(first, " ", &posn); // <- This give the name of the instruction
+		
+		if(part == NULL) continue; // Empty line
+		
 		printf("\x1b[1m\x1b[93m[%s]\x1b[0m\n", part);
 		
 		Instruction::Type type = get_instruction_type(part);
-		int64_t *arguments = numArgs > 0 ? new int64_t[numArgs] : nullptr;
+		Value *arguments = numArgs > 0 ? new Value[numArgs] : nullptr;
 		int idx = 0;
 		
 		part = strtok_r(NULL, ",", &posn); // <- Then it gets the arguments
