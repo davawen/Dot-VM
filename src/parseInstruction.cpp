@@ -43,6 +43,73 @@ Instruction::Type get_instruction_type(const char *str)
 	}
 };
 
+char *handle_escape_sequences(char *str)
+{	
+	// March along the string and escape escape sequences along the way
+	// 'ptr' skips escape sequences, which are overwritten using 'idx'
+	
+	char *ptr;
+	int offset = 0;
+	for(ptr = str; *ptr; ptr++)
+	{
+		char chr = *ptr;
+
+		if(chr == '\\')
+		{
+			chr = *++ptr;
+
+			if(chr == '\0') throw std::runtime_error("Error: Unterminated escape sequence");
+			
+			switch(chr)
+			{
+				case 'a':
+					chr = '\a';
+					break;
+				case 'b':
+					chr = '\b';
+					break;
+				case 'f':
+					chr = '\f';
+					break;
+				case 'n':
+					chr = '\n';
+					break;
+				case 'r':
+					chr = '\r';
+					break;
+				case 't':
+					chr = '\t';
+					break;
+				case 'v':
+					chr = '\v';
+					break;
+				case '\"':
+					chr = '\"';
+					break;
+				case '?':
+					chr = '\?';
+					break;
+				case '\\': // chr is already a backslash
+					break;
+				default:
+					printf("\x1b[31m[Warning]\x1b[0m : uknown escape sequence : \\%c", chr);
+					goto escapeLoop__;
+			}
+			
+			offset++;
+
+		escapeLoop__:
+			;	
+		}
+
+		*(ptr - offset) = chr;
+	}
+	*(ptr - offset) = '\0';
+
+	return str;
+}	
+
+
 // void validateArguments()
 // {
 	
@@ -71,64 +138,12 @@ void parse_instructions(const char *filename, std::vector<Instruction> &instruct
 		int index = 0;
 		while((chr = fgetc(fp)) != EOF) // Get new char and check if we reached end of file
 		{
-			bool escaped = false;
-
-			// Escape characters
-			if(chr == '\\')
-			{
-				chr = fgetc(fp);
-
-				if(chr == EOF) break;
-				
-				escaped = true;
-				/*
-					TODO: 
-						Putting escape sequences here messes everything later during tokenization
-						
-						They should be put at the end of the lexer, or shoudl be delt with during runtime / compilation
-				*/
-				switch(chr)
-				{
-					case 'a':
-						chr = '\a';
-						break;
-					case 'b':
-						chr = '\b';
-						break;
-					case 'f':
-						chr = '\f';
-						break;
-					case 'n':
-						chr = '\n';
-						break;
-					case 'r':
-						chr = '\r';
-						break;
-					case 't':
-						chr = '\t';
-						break;
-					case 'v':
-						chr = '\v';
-						break;
-					case '\"':
-						chr = '\"';
-						break;
-					case '?':
-						chr = '\?';
-						break;
-					case '\\': // chr is already a backslash
-						break;
-					default:
-						printf("\x1b[31m[Warning]\x1b[0m : uknown escape sequence : \\%c", chr);
-						break;
-				}
-			}
 		
 			if(chr == ';' && !inQuotation)
 			{
 				inComment = true;
 			}
-			else if(chr == '\n' && !escaped)
+			else if(chr == '\n')
 			{
 				inComment = false;
 				
@@ -151,7 +166,7 @@ void parse_instructions(const char *filename, std::vector<Instruction> &instruct
 			}
 			else if(inQuotation) buffer[index++] = chr;
 			
-			if(chr == '\"' && !inComment && !escaped)
+			if(chr == '\"' && !inComment)
 			{
 				inQuotation = !inQuotation;
 			}
@@ -220,12 +235,12 @@ void parse_instructions(const char *filename, std::vector<Instruction> &instruct
 			bool isString = false;
 			int partLength;
 			
-			// TODO: Move escape sequences somewhere else to make this work
+			// DONE: Move escape sequences somewhere else to make this work
 			if(part[0] == '\"') // overwrite quotation marks if it's a string
 			{
 				part++;
-				char *ptr = part;
-				while(*(ptr++ + 2)); // iterate until before NULL character
+				char *ptr;
+				for(ptr = part; *(ptr + 1); ptr++); // iterate until before NULL character
 				
 				while(*ptr != '\"') // in case a , is in the string
 				{
@@ -238,8 +253,8 @@ void parse_instructions(const char *filename, std::vector<Instruction> &instruct
 					
 					part = strcat(part, newPart);
 					
-					char *ptr = part;
-					while(*(ptr++ + 2)); // iterate until before NULL character
+					char *ptr;
+					for(ptr = part; *(ptr + 1); ptr++); // iterate until before NULL character
 				}
 				*(ptr) = '\0'; // reduce length by 1
 				

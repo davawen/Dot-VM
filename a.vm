@@ -1,4 +1,4 @@
 : .start ; Program starts here
-	push 10
-
-	print "String ",20
+	; woo escaped sequences
+	; now i just need to add unicode AAAAAAAAAAAAAAAA
+	print "Value of Ten is : \n\t",10,"\n"
