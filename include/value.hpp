@@ -6,16 +6,16 @@ struct Value
 {
 	enum Type
 	{
-		value, // 64 bit signed integer
-		string, // C string (NULL terminated) pointer
-		reg, // Register name hash
-		regValue, // Register name hash
-		label // Label name hash
+		VALUE, // 64 bit signed integer
+		STRING, // C string (NULL terminated) pointer
+		REG, // Register name hash
+		REG_VALUE, // Register name hash
+		LABEL // Label name hash
 	} type;
 	
 	int64_t val;
 	
-	Value(Type type = Type::value, int64_t val = 0)
+	Value(Type type = Type::VALUE, int64_t val = 0)
 	{
 		this->type = type;
 		this->val = val;

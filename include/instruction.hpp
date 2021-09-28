@@ -8,13 +8,13 @@ struct Instruction
 {
 	enum struct Type
 	{
-		push, pop,
-		add, sub, mul, div,
-		and_, or_, xor_, not_, // Reserved names
-		lshift, rshift,
-		mov,
-		label, jump, ifeq,
-		print // Will probably get replaced by some sort of sys_call
+		PUSH, POP,
+		ADD, SUB, MUL, DIV,
+		AND, OR, XOR, NOT,
+		LSHIFT, RSHIFT,
+		MOV,
+		LABEL, JUMP, IFEQ,
+		PRINT // Will probably get replaced by some sort of sys_call
 	};
 	
 	Type type;
@@ -43,7 +43,7 @@ struct Instruction
 		{
 			for(int i = 0; i < numValues; i++)
 			{
-				if(value[i].type == Value::Type::string) delete[] reinterpret_cast<char *>(value[i].val);
+				if(value[i].type == Value::Type::STRING) delete[] reinterpret_cast<char *>(value[i].val);
 			}
 			
 			delete[] value;
@@ -56,55 +56,55 @@ inline std::ostream &operator<<(std::ostream &os, const Instruction &instruction
 	os << "Instruction: ";
 	switch(instruction.type)
 	{
-		case Instruction::Type::push:
+		case Instruction::Type::PUSH:
 			os << "push";
 			break;
-		case Instruction::Type::pop:
+		case Instruction::Type::POP:
 			os << "pop";
 			break;
-		case Instruction::Type::add:
+		case Instruction::Type::ADD:
 			os << "add";
 			break;
-		case Instruction::Type::sub:
+		case Instruction::Type::SUB:
 			os << "sub";
 			break;
-		case Instruction::Type::mul:
+		case Instruction::Type::MUL:
 			os << "mul";
 			break;
-		case Instruction::Type::div:
+		case Instruction::Type::DIV:
 			os << "div";
 			break;
-		case Instruction::Type::and_:
+		case Instruction::Type::AND:
 			os << "and";
 			break;
-		case Instruction::Type::or_:
+		case Instruction::Type::OR:
 			os << "or";
 			break;
-		case Instruction::Type::xor_:
+		case Instruction::Type::XOR:
 			os << "xor";
 			break;
-		case Instruction::Type::not_:
+		case Instruction::Type::NOT:
 			os << "not";
 			break;
-		case Instruction::Type::lshift:
+		case Instruction::Type::LSHIFT:
 			os << "lshift";
 			break;
-		case Instruction::Type::rshift:
+		case Instruction::Type::RSHIFT:
 			os << "rshift";
 			break;
-		case Instruction::Type::mov:
+		case Instruction::Type::MOV:
 			os << "mov";
 			break;
-		case Instruction::Type::label:
+		case Instruction::Type::LABEL:
 			os << "label";
 			break;
-		case Instruction::Type::jump:
+		case Instruction::Type::JUMP:
 			os << "jump";
 			break;
-		case Instruction::Type::ifeq:
+		case Instruction::Type::IFEQ:
 			os << "ifeq";
 			break;
-		case Instruction::Type::print:
+		case Instruction::Type::PRINT:
 			os << "print";
 			break;
 	}
@@ -114,7 +114,7 @@ inline std::ostream &operator<<(std::ostream &os, const Instruction &instruction
 		os << ", Value: ";
 		for(int i = 0; i < instruction.numValues; i++)
 		{
-			if(instruction.value[i].type == Value::Type::string)
+			if(instruction.value[i].type == Value::Type::STRING)
 			{
 				os << '\"' << reinterpret_cast<char *>(instruction.value[i].val) << "\", ";
 			}

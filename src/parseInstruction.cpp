@@ -5,39 +5,39 @@ Instruction::Type get_instruction_type(const char *str)
 	switch(hash(str))
 	{
 		case hash("push"):
-			return Instruction::Type::push;
+			return Instruction::Type::PUSH;
 		case hash("pop"):
-			return Instruction::Type::pop;
+			return Instruction::Type::POP;
 		case hash("add"):
-			return Instruction::Type::add;
+			return Instruction::Type::ADD;
 		case hash("sub"):
-			return Instruction::Type::sub;
+			return Instruction::Type::SUB;
 		case hash("mul"):
-			return Instruction::Type::mul;
+			return Instruction::Type::MUL;
 		case hash("div"):
-			return Instruction::Type::div;
+			return Instruction::Type::DIV;
 		case hash("and"):
-			return Instruction::Type::and_;
+			return Instruction::Type::AND;
 		case hash("or"):
-			return Instruction::Type::or_;
+			return Instruction::Type::OR;
 		case hash("xor"):
-			return Instruction::Type::xor_;
+			return Instruction::Type::XOR;
 		case hash("not"):
-			return Instruction::Type::not_;
+			return Instruction::Type::NOT;
 		case hash("lshift"):
-			return Instruction::Type::lshift;
+			return Instruction::Type::LSHIFT;
 		case hash("rshift"):
-			return Instruction::Type::rshift;
+			return Instruction::Type::RSHIFT;
 		case hash("mov"):
-			return Instruction::Type::mov;
+			return Instruction::Type::MOV;
 		case hash(":"):
-			return Instruction::Type::label;
+			return Instruction::Type::LABEL;
 		case hash("jump"):
-			return Instruction::Type::jump;
+			return Instruction::Type::JUMP;
 		case hash("ifeq"):
-			return Instruction::Type::ifeq;
+			return Instruction::Type::IFEQ;
 		case hash("print"):
-			return Instruction::Type::print;
+			return Instruction::Type::PRINT;
 		default:
 			throw std::invalid_argument(std::string("Instruction type does not exist. Got: ") + str);
 	}
@@ -246,24 +246,24 @@ void parse_instructions(const char *filename, std::vector<Instruction> &instruct
 				partLength = ptr - part;
 				isString = true;
 				
-				arguments[idx].type = Value::Type::string;
+				arguments[idx].type = Value::Type::STRING;
 			}
 			else // TODO: deal with register values
 			{
 				partLength = strlen(part);
 				
-				arguments[idx].type = Value::Type::value;
+				arguments[idx].type = Value::Type::VALUE;
 			}
 			
 			printf("\x1b[33m[%s]\x1b[0m\n", part);
 			switch(type)
 			{
-				case Instruction::Type::jump:
-				case Instruction::Type::label:
+				case Instruction::Type::JUMP:
+				case Instruction::Type::LABEL:
 					arguments[idx] = hash(part);
 					break;
 				// Be warned : this is going to be weird as fuck.
-				case Instruction::Type::print:
+				case Instruction::Type::PRINT:
 					if(isString)
 					{
 						char *strPtr = new char[partLength];

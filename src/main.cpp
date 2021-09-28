@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 		
 		switch(it.type)
 		{
-			case Instruction::Type::push:
+			case Instruction::Type::PUSH:
 				if(it.numValues == 0)
 				{
 					// Push register value instead
@@ -99,26 +99,26 @@ int main(int argc, char *argv[])
 					*sp = it.value[i].val;
 				}
 				break;
-			case Instruction::Type::pop:
+			case Instruction::Type::POP:
 				// Pop current stack value to register
 				reg = *sp;
 				sp--;
 				break;
-			case Instruction::Type::print:
+			case Instruction::Type::PRINT:
 				for(int i = 0; i < it.numValues; i++)
 				{
 					// Will add support for more types later
-					if(it.value[i].type == Value::Type::string)
+					if(it.value[i].type == Value::Type::STRING)
 						printf("%s", reinterpret_cast<char *>(it.value[i].val));
 					else
 					 	printf("%" PRId64, it.value[i].val);
 				}
 				break;
-			case Instruction::Type::ifeq: // Only evaluates next instruction if condition is true
+			case Instruction::Type::IFEQ: // Only evaluates next instruction if condition is true
 				// ifeq [comparator],[value]
 				
 				break;
-			case Instruction::Type::jump:
+			case Instruction::Type::JUMP:
 			{
 				// Find matching label with a linear search
 				// Efficicency is shit
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 				auto match = instructions.end();
 				for(auto itlabel = instructions.begin(); itlabel != instructions.end(); itlabel++)
 				{
-					if(itlabel->type != Instruction::Type::label) continue;
+					if(itlabel->type != Instruction::Type::LABEL) continue;
 
 					if(itlabel->value->val == it.value->val) match = itlabel;
 				}
