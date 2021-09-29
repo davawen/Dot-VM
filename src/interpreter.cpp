@@ -1,6 +1,6 @@
 #include "interpreter.hpp"
 
-void interpret(std::vector<Instruction> &instructions)
+void interpret_linux(std::vector<Expression> &expressions)
 {
 	constexpr int STACK_SIZE = 10000;
 	int stack[STACK_SIZE];
@@ -9,31 +9,31 @@ void interpret(std::vector<Instruction> &instructions)
 	// Register is apparently a reserved c++ keyword *shrugs*
 	int reg = 0;
 
-	auto fatalErr = [](const char *str) -> void
+	auto fatal_err = [](const char *str) -> void
 	{
 		printf("\x1b[41mFatal error: %s.\n", str);
 		throw std::runtime_error(str);
 	};
 
-	auto warningErr = [](const char *str) -> void
+	auto warning_err = [](const char *str) -> void
 	{
 		printf("\x1b[43mWarning: %s.\n", str);
 	};
 	
-	auto iterator = instructions.begin();
+	auto iterator = expressions.begin();
 	// Search for start label
-	for(; iterator != instructions.end(); iterator++)
+	for(; iterator != expressions.end(); iterator++)
 	{
-		if(iterator->type == Instruction::Type::LABEL && iterator->value->val == hash(".start"))
+		if(iterator->ins.type == Instruction::Type::LABEL && iterator->value[0].val == hash(".start"))
 			break;
 	}
 
-	if(iterator == instructions.end())
+	if(iterator == expressions.end())
 	{
-		fatalErr("No entry point (.start)");
+		fatal_err("No entry point (.start)");
 	}
 
-	for(; iterator != instructions.end(); iterator++)
+	for(; iterator != expressions.end(); iterator++)
 	{
 		auto &it = *iterator;
 
@@ -41,16 +41,15 @@ void interpret(std::vector<Instruction> &instructions)
 		if(sp < stack)
 		{
 			// TODO: Add flavor text (... at line xx and instruction xx)
-			fatalErr("Stack underflow");
+			fatal_err("Stack underflow");
 		}
 
 		if(sp > stack + STACK_SIZE)
 		{
-			warningErr("Stack overflow, probable segmentation fault");
+			warning_err("Stack overflow, probable segmentation fault");
 		}
-		// std::cout << it << '\n';
 		
-		switch(it.type)
+		switch(it.ins.type)
 		{
 			case Instruction::Type::PUSH:
 				if(it.numValues == 0)
@@ -94,10 +93,10 @@ void interpret(std::vector<Instruction> &instructions)
 				// Efficicency is shit
 				// Labels should be stored in their own vector
 				
-				auto match = instructions.end();
-				for(auto itlabel = instructions.begin(); itlabel != instructions.end(); itlabel++)
+				auto match = expressions.end();
+				for(auto itlabel = expressions.begin(); itlabel != expressions.end(); itlabel++)
 				{
-					if(itlabel->type != Instruction::Type::LABEL) continue;
+					if(itlabel->ins.type != Instruction::Type::LABEL) continue;
 
 					if(itlabel->value->val == it.value->val)
 					{
@@ -106,9 +105,10 @@ void interpret(std::vector<Instruction> &instructions)
 					}
 				}
 
-				if(match == instructions.end())
+				if(match == expressions.end())
 				{
-					warningErr("Label does not exists."); // This should be checked at "compile" time
+					// TODO: Move this to "compilation" step
+					warning_err("Label does not exists."); 
 					break;
 				}
 				

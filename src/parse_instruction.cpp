@@ -1,4 +1,4 @@
-#include "parseInstruction.hpp"
+#include "parse_instruction.hpp"
 
 Instruction::Type get_instruction_type(const char *str)
 {
@@ -115,7 +115,7 @@ char *handle_escape_sequences(char *str)
 	
 // }
 
-void parse_instructions(const char *filename, std::vector<Instruction> &instructions)
+void parse_instructions(const char *filename, std::vector<Expression> &instructions)
 {
 	FILE *fp = fopen(filename, "r");
 	
@@ -271,6 +271,8 @@ void parse_instructions(const char *filename, std::vector<Instruction> &instruct
 			}
 			
 			printf("\x1b[33m[%s]\x1b[0m\n", part);
+			
+			// TODO: Move this from tokenization to "compilation"
 			switch(type)
 			{
 				case Instruction::Type::JUMP:
@@ -307,7 +309,7 @@ void parse_instructions(const char *filename, std::vector<Instruction> &instruct
 		
 		printf("Num args: %i, ptr: %p\n", numArgs, (void *)arguments);
 		
-		instructions.push_back( Instruction( type, arguments, numArgs ) );
+		instructions.push_back( Expression( Instruction(type), arguments, numArgs ) );
 	}
 	while((first = strtok_r(NULL, "\n", &next)) != NULL);
 	

@@ -11,7 +11,7 @@
 #include <cinttypes>
 
 #include "instruction.hpp"
-#include "parseInstruction.hpp"
+#include "parse_instruction.hpp"
 
 #include "interpreter.hpp"
 
@@ -35,21 +35,19 @@ int main(int argc, char *argv[])
 		printf("Error: No file specified.\n");
 		exit(-1);
 	}
-	
-	
 	// Parse file
-	std::vector<Instruction> instructions;
-	
-	parse_instructions(argv[1], instructions);
+	std::vector<Expression> expressions;
+
+	parse_instructions(argv[1], expressions);
 	
 
 	printf("\n");
-	std::for_each(instructions.begin(), instructions.end(), [](Instruction &ins){ std::cout << ins << '\n'; });
+	std::for_each(expressions.begin(), expressions.end(), [](Expression &ins){ std::cout << ins << '\n'; });
 	
 
 	printf("\n[STARTING EXECUTION FROM HERE]\n\n");
 	
-	interpret(instructions);
+	interpret_linux(expressions);
 
 	return 0;
 }
