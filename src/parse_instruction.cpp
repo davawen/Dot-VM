@@ -115,6 +115,7 @@ char *handle_escape_sequences(char *str)
 	
 // }
 
+/// TODO: Split this into a lexing step and a parsing step
 void parse_instructions(const char *filename, std::vector<Expression> &instructions)
 {
 	FILE *fp = fopen(filename, "r");
@@ -272,7 +273,7 @@ void parse_instructions(const char *filename, std::vector<Expression> &instructi
 			
 			printf("\x1b[33m[%s]\x1b[0m\n", part);
 			
-			// TODO: Move this from tokenization to "compilation"
+			// TODO: Move this from tokenization to parsing
 			switch(type)
 			{
 				case Instruction::Type::JUMP:

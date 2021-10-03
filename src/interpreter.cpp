@@ -1,6 +1,6 @@
 #include "interpreter.hpp"
 
-void interpret_linux(std::vector<Expression> &expressions)
+void interpret(std::vector<Expression> &expressions)
 {
 	constexpr int STACK_SIZE = 10000;
 	int stack[STACK_SIZE];

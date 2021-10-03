@@ -15,26 +15,31 @@
 
 #include "interpreter.hpp"
 
-#define M_LOOP(x) for(int idx__ = 0; idx__ < x; idx__++)
+#define FLAG_IMPLEMENTATION
+#include "flags.hpp"
 
-// int str_cut(char *str, int begin, int len)
-// {
-//     int l = strlen(str);
-
-//     if (len < 0) len = l - begin;
-//     if (begin + len > l) len = l - begin;
-//     memmove(str + begin, str + begin + len, l - len + 1);
-
-//     return len;
-// }
-
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
-	if(argc <= 1)
+	bool *help = flag_bool("help", "Prints this help and exits.", false);
+	
+	const char **file = flag_str("file", "Input file.", NULL);
+	bool *comp = flag_bool("comp", "Wether the program should get compiled. [WIP]", false);
+
+	parse_flags(argc, argv);
+	
+	if(*help)
 	{
-		printf("Error: No file specified.\n");
-		exit(-1);
+		print_help("dot-vm --file FILENAME [--comp]", "Takes a dotvm file and either interpret it or compiles it to a binary.");
+
+		return EXIT_SUCCESS;
 	}
+
+	if(*file == NULL)
+	{
+		printf("Error: no input file recieved.\n");
+		return EXIT_FAILURE;
+	}
+
 	// Parse file
 	std::vector<Expression> expressions;
 
@@ -47,7 +52,7 @@ int main(int argc, char *argv[])
 
 	printf("\n[STARTING EXECUTION FROM HERE]\n\n");
 	
-	interpret_linux(expressions);
+	interpret(expressions);
 
 	return 0;
 }
