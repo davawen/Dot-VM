@@ -109,14 +109,7 @@ char *handle_escape_sequences(char *str)
 	return str;
 }	
 
-
-// void validateArguments()
-// {
-	
-// }
-
-/// TODO: Split this into a lexing step and a parsing step
-void parse_instructions(const char *filename, std::vector<Expression> &instructions)
+void tokenize(const char *filename, std::vector<Token> &tokens)
 {
 	FILE *fp = fopen(filename, "r");
 	
@@ -176,6 +169,8 @@ void parse_instructions(const char *filename, std::vector<Expression> &instructi
 		// buffer[index] = '\0';
 	}
 	
+	fclose(fp);
+	
 	char *next = NULL;
 	char *first = strtok_r(buffer, "\n", &next);
 	
@@ -186,7 +181,6 @@ void parse_instructions(const char *filename, std::vector<Expression> &instructi
 		
 		//Loops over the string to find the amount of arguments, and cleans up trailing spaces / commas
 		// int instructionLength = next - first;
-		int numArgs = 0;
 		char *instructionPtr = first;
 		while((chr = *instructionPtr++))
 		{
@@ -197,7 +191,6 @@ void parse_instructions(const char *filename, std::vector<Expression> &instructi
 					{
 						*(instructionPtr-1) = '\0';
 					}
-					else if(numArgs == 0) numArgs++; // Only counts first space as an argument
 					break;
 				case ',':
 					if(*instructionPtr == '\0')
@@ -211,8 +204,6 @@ void parse_instructions(const char *filename, std::vector<Expression> &instructi
 						// Move everything to the right of instruction ptr one byte to the left (overwrite space)
 						memmove(instructionPtr, instructionPtr + 1, next - instructionPtr); 
 					}
-					
-					numArgs++;
 					break;
 			}
 		}
@@ -223,6 +214,97 @@ void parse_instructions(const char *filename, std::vector<Expression> &instructi
 		
 		if(part == NULL) continue; // Empty line
 		
+		printf("\x1b[1m\x1b[93m[%s]\x1b[0m\n", part);
+		
+		tokens.push_back( Token( Token::INSTRUCTION, std::string(part), 0, 0 ) );
+		
+		part = strtok_r(NULL, ",", &posn); // <- Then it gets the arguments
+		
+		while(part != NULL)
+		{
+			if(part[0] == '$') // TODO: recursive dereference
+			{
+				tokens.push_back( Token( Token::OPERATOR, "$", 0, 0 ) );
+
+				part++;
+			}
+			
+			Token::Type tokenType;
+			int partLength;
+			
+			// DONE: Move escape sequences somewhere else to make this work
+			if(part[0] == '\"') // overwrite quotation marks if it's a string
+			{
+				part++;
+				char *ptr = part;
+				while(*(++ptr + 1));
+				
+				while(*ptr != '\"') // in case a ',' is in the string
+				{
+					char *newPart = strtok_r(NULL, ",", &posn);
+					
+					if(newPart == NULL)
+					{
+						throw std::runtime_error("Error: non-terminated string");	
+					}
+					
+					// NOTE: This doesn't move anything, just replace the NUL at the end of part with a colon
+					// NOTE: So, this could just be replaced by *(newPart - 1) = ','
+					part = strcat(part, newPart);
+					
+					ptr = part;
+					while(*(++ptr + 1));
+				}
+				*(ptr) = '\0'; // reduce length by 1
+				
+				tokenType = Token::STRING;
+			}
+			else // DONE: deal with registers (sorta)
+			{
+				char *endPtr;
+				bool isNum = false;
+				
+				// TODO: add overflow check
+				/*int num = */strtoll(part, &endPtr, 0);
+				
+				isNum = endPtr != part && *endPtr == '\0';
+
+				if(isNum) // Number
+				{
+					tokenType = Token::NUMBER;
+					partLength = endPtr - part; // if endPtr is '\0', then we are at the end of the string and we don't need to compare characters again
+				}
+				else // Label or register
+				{
+					tokenType = Token::LITERAL;
+
+					partLength = strlen(part);
+				}
+
+			}
+			
+			printf("\x1b[33m[%s]\x1b[0m\n", part);
+			
+			tokens.push_back( Token( tokenType, std::string(part), 0, 0 ) );	
+			
+			part = strtok_r(NULL, ",", &posn);
+		}
+
+		tokens.push_back( Token(Token::NEWLINE, "\n", 0, 0) );
+	}
+	while((first = strtok_r(NULL, "\n", &next)) != NULL);
+	
+	delete[] buffer;
+	
+
+}
+
+
+
+/// TODO: Split this into a lexing step and a parsing step
+void parse_instructions(std::vector<Token> &tokens, std::vector<Expression> &instructions)
+{
+		/*
 		printf("\x1b[1m\x1b[93m[%s]\x1b[0m\n", part);
 		
 		Instruction::Type type = get_instruction_type(part);
@@ -311,10 +393,5 @@ void parse_instructions(const char *filename, std::vector<Expression> &instructi
 		printf("Num args: %i, ptr: %p\n", numArgs, (void *)arguments);
 		
 		instructions.push_back( Expression( Instruction(type), arguments, numArgs ) );
-	}
-	while((first = strtok_r(NULL, "\n", &next)) != NULL);
-	
-	delete[] buffer;
-	
-	fclose(fp);
+	*/
 }

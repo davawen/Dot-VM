@@ -1,11 +1,13 @@
-#include <cstdio>
 #include <iostream>
-#include <stdexcept>
 #include <vector>
-#include <exception>
 #include <ostream>
 #include <algorithm>
+#include <filesystem>
+#include <stdexcept>
+#include <exception>
 
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <cinttypes>
@@ -18,6 +20,8 @@
 #define FLAG_IMPLEMENTATION
 #include "flags.hpp"
 
+namespace fs = std::filesystem;
+
 int main(int argc, char **argv)
 {
 	bool *help = flag_bool("help", "Prints this help and exits.", false);
@@ -27,7 +31,7 @@ int main(int argc, char **argv)
 
 	parse_flags(argc, argv);
 	
-	if(*help)
+	if(*help || argc == 1)
 	{
 		print_help("dot-vm --file FILENAME [--comp]", "Takes a dotvm file and either interpret it or compiles it to a binary.");
 
@@ -39,20 +43,36 @@ int main(int argc, char **argv)
 		printf("Error: no input file recieved.\n");
 		return EXIT_FAILURE;
 	}
+	
+	if(!fs::exists(*file) || !fs::is_regular_file(*file))
+	{
+		printf("Error: incorrect file given.\n");
+		return EXIT_FAILURE;
+	}
+	
+	
+	std::vector<Token> tokens;
+
+	tokenize(*file, tokens);
+
+	for(auto &token : tokens)
+	{
+		printf("Token, type: %i, value: %s\n", token.type, token.value.c_str());
+	}
 
 	// Parse file
 	std::vector<Expression> expressions;
 
-	parse_instructions(argv[1], expressions);
+	//parse_instructions(argv[1], expressions);
 	
 
-	printf("\n");
-	std::for_each(expressions.begin(), expressions.end(), [](Expression &ins){ std::cout << ins << '\n'; });
-	
+	//printf("\n");
+	//std::for_each(expressions.begin(), expressions.end(), [](Expression &ins){ std::cout << ins << '\n'; });
+	//
 
-	printf("\n[STARTING EXECUTION FROM HERE]\n\n");
-	
-	interpret(expressions);
+	//printf("\n[STARTING EXECUTION FROM HERE]\n\n");
+	//
+	//interpret(expressions);
 
 	return 0;
 }
