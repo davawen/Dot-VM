@@ -33,10 +33,9 @@ struct Expression
 	{
 		if(value != nullptr)
 		{
-			for(int i = 0; i < numValues; i++)
-			{
-				if(value[i].type == Value::Type::STRING) delete[] reinterpret_cast<char *>(value[i].val);
-			}
+			//for(int i = 0; i < numValues; i++)
+			//{
+			//}
 			
 			delete[] value;
 		}
@@ -108,9 +107,11 @@ inline std::ostream &operator<<(std::ostream &os, const Expression &expression)
 		{
 			if(expression.value[i].type == Value::Type::STRING)
 			{
-				os << '\"' << reinterpret_cast<char *>(expression.value[i].val) << "\", ";
+				os << '\"' << *reinterpret_cast<std::string *>(expression.value[i].val) << "\": ";
 			}
-			else os << expression.value[i].val << ", ";
+			else os << expression.value[i].val << ": ";
+
+			os << expression.value[i].type << ", ";
 		}
 	}
 	

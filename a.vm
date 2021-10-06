@@ -3,4 +3,6 @@
 	; now i just need to add unicode AAAAAAAAAAAAAAAA
 	mov eax, 10
 	mov reg, $eax
+	
 	print "Value of Ten is : \n\t",10,"\n"
+

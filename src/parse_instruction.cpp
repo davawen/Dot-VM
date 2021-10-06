@@ -181,6 +181,8 @@ void tokenize(const char *filename, std::vector<Token> &tokens)
 		
 		//Loops over the string to find the amount of arguments, and cleans up trailing spaces / commas
 		// int instructionLength = next - first;
+
+		// TODO: Move this shit to reading
 		char *instructionPtr = first;
 		while((chr = *instructionPtr++))
 		{
@@ -230,7 +232,6 @@ void tokenize(const char *filename, std::vector<Token> &tokens)
 			}
 			
 			Token::Type tokenType;
-			int partLength;
 			
 			// DONE: Move escape sequences somewhere else to make this work
 			if(part[0] == '\"') // overwrite quotation marks if it's a string
@@ -272,13 +273,10 @@ void tokenize(const char *filename, std::vector<Token> &tokens)
 				if(isNum) // Number
 				{
 					tokenType = Token::NUMBER;
-					partLength = endPtr - part; // if endPtr is '\0', then we are at the end of the string and we don't need to compare characters again
 				}
 				else // Label or register
 				{
 					tokenType = Token::LITERAL;
-
-					partLength = strlen(part);
 				}
 
 			}
@@ -299,99 +297,108 @@ void tokenize(const char *filename, std::vector<Token> &tokens)
 
 }
 
-
-
-/// TODO: Split this into a lexing step and a parsing step
-void parse_instructions(std::vector<Token> &tokens, std::vector<Expression> &instructions)
+/// DONE: Split this into a lexing step and a parsing step
+void parse_instructions(std::vector<Token> &tokens, std::vector<Expression> &expressions)
 {
-		/*
-		printf("\x1b[1m\x1b[93m[%s]\x1b[0m\n", part);
+	unsigned long idx = 0;
+
+	while(idx < tokens.size())
+	{
+		puts("\n");
+
+		Token &token = tokens[idx++];
 		
-		Instruction::Type type = get_instruction_type(part);
-		Value *arguments = numArgs > 0 ? new Value[numArgs] : nullptr;
-		int idx = 0;
-		
-		part = strtok_r(NULL, ",", &posn); // <- Then it gets the arguments
-		
-		while(part != NULL) // This shouldn't really ever be called if there are no arguments, so it should be fine ??
+		int numTokens = 0;
+		int numArgs = 0;
+		while( tokens[idx + numTokens].type != Token::NEWLINE )
 		{
-			bool isString = false;
-			int partLength;
+			if(tokens[idx + numTokens].type != Token::OPERATOR) numArgs++;
 			
-			// DONE: Move escape sequences somewhere else to make this work
-			if(part[0] == '\"') // overwrite quotation marks if it's a string
+			numTokens++;
+		}
+		
+		Instruction::Type instructionType = get_instruction_type(token.value.c_str());
+		Value *args = numArgs > 0 ? new Value[numArgs] : nullptr;
+		int argIdx = 0;
+
+		// TODO: Recursive dereference
+		bool isRegisterValue = false;
+		for(int i = 0; i < numTokens; i++)
+		{
+			Token &curToken = tokens[idx + i];
+
+			switch(curToken.type)
 			{
-				part++;
-				char *ptr;
-				for(ptr = part; *(ptr + 1); ptr++); // iterate until before NULL character
-				
-				while(*ptr != '\"') // in case a , is in the string
-				{
-					char *newPart = strtok_r(NULL, ",", &posn);
-					
-					if(newPart == NULL)
-					{
-						throw std::runtime_error("Lexer Error : non-terminated string");	
-					}
-					
-					part = strcat(part, newPart);
-					
-					char *ptr;
-					for(ptr = part; *(ptr + 1); ptr++); // iterate until before NULL character
-				}
-				*(ptr) = '\0'; // reduce length by 1
-				
-				partLength = ptr - part;
-				isString = true;
-				
-				arguments[idx].type = Value::Type::STRING;
-			}
-			else // TODO: deal with register values
-			{
-				partLength = strlen(part);
-				
-				arguments[idx].type = Value::Type::VALUE;
-			}
-			
-			printf("\x1b[33m[%s]\x1b[0m\n", part);
-			
-			// TODO: Move this from tokenization to parsing
-			switch(type)
-			{
-				case Instruction::Type::JUMP:
-				case Instruction::Type::LABEL:
-					arguments[idx] = hash(part);
+				case Token::NUMBER:
+					args[argIdx].val = strtoll(curToken.value.c_str(), NULL, 0);
+					args[argIdx].type = Value::NUMBER;
+
+					argIdx++;
 					break;
-				// Be warned : this is going to be weird as fuck.
-				case Instruction::Type::PRINT:
-					if(isString)
+				case Token::STRING:
+				{
+					std::string *str = new std::string(curToken.value);
+					args[argIdx].val = reinterpret_cast<int64_t>(str);
+					args[argIdx].type = Value::STRING;
+					
+					argIdx++;
+					break;
+				}
+				case Token::LITERAL:
+					if(instructionType == Instruction::Type::LABEL)
 					{
-						char *strPtr = new char[partLength];
-						memcpy(strPtr, part, partLength);
+						args[argIdx].val = hash(curToken.value.c_str());
+						args[argIdx].type = Value::LABEL; // This should just be set to number
 						
-						// Stores pointer in int64_t
-						// Keeps bit configuration intact, will be converted back to pointer when printed out
-						// Ex with 8 bit pointers :
-						// char * : 1001 0110 (0x96) <-> int64_t : 1001 0110 (-0x6A)
-						arguments[idx] = reinterpret_cast<int64_t>(strPtr); 
+						argIdx++;
 					}
 					else
 					{
-						arguments[idx] = strtoll(part, NULL, 0);
+						switch(hash(curToken.value.c_str()))
+						{
+							case hash("reg"):
+								args[argIdx].val = static_cast<int64_t>(Register::REG);
+								break;
+							case hash("eax"):
+								args[argIdx].val = static_cast<int64_t>(Register::EAX);
+								break;
+							case hash("sp"):
+								args[argIdx].val = static_cast<int64_t>(Register::SP);
+								break;
+							case hash("void"):
+								args[argIdx].val = static_cast<int64_t>(Register::VOID);
+								break;
+							default:
+								compile_error(curToken.line, curToken.pos, "Uknown register: %s", curToken.value.c_str());
+								break;
+						}
+
+						if(isRegisterValue)
+						{
+							args[argIdx].type = Value::REG_VALUE;
+							isRegisterValue = false;
+						}
+						else
+						{
+							args[argIdx].type = Value::REG;
+						}
+
+						argIdx++;
 					}
-					
+					break;
+				case Token::OPERATOR:
+					isRegisterValue = true;
 					break;
 				default:
-					arguments[idx] = strtoll(part, NULL, 0); 
+					compile_error(curToken.line, curToken.pos, "Unexpected token encountered: %i, %s", curToken.type, curToken.value.c_str());
 					break;
 			}
-			
-			part = strtok_r(NULL, ",", &posn);
-			idx++;
 		}
 		
-		printf("Num args: %i, ptr: %p\n", numArgs, (void *)arguments);
-		
-		instructions.push_back( Expression( Instruction(type), arguments, numArgs ) );
-	*/
+		expressions.push_back( Expression( Instruction( instructionType ), args, numArgs )  );
+			
+		idx += numTokens + 1; // args + new line
+	}
+
+	// TODO: Type checking
 }

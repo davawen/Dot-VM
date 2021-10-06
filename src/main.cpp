@@ -63,12 +63,13 @@ int main(int argc, char **argv)
 	// Parse file
 	std::vector<Expression> expressions;
 
-	//parse_instructions(argv[1], expressions);
+	parse_instructions(tokens, expressions);
 	
 
 	//printf("\n");
-	//std::for_each(expressions.begin(), expressions.end(), [](Expression &ins){ std::cout << ins << '\n'; });
+	std::for_each(expressions.begin(), expressions.end(), [](Expression &ins){ std::cout << ins << '\n'; });
 	//
+	
 
 	//printf("\n[STARTING EXECUTION FROM HERE]\n\n");
 	//

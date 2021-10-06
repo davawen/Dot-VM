@@ -9,6 +9,8 @@
 #include "hash.hpp"
 #include "expression.hpp"
 #include "token.hpp"
+#include "register.hpp"
+#include "error_handling.hpp"
 
 Instruction::Type get_instruction_type(const char *str);
 
