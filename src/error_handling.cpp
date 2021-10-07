@@ -2,24 +2,26 @@
 
 void compile_warning(int line, int pos, const char *format, ...)
 {
-	printf("\x1b[103mWarning\x1b[0m on line %i at %i:\n", line, pos);
+	printf("\x1b[33mWarning on line %i at position %i:\x1b[0m\n", line, pos);
 	
 	va_list argptr;
 	va_start(argptr, format);
 	
-	printf(format, argptr);
+	vprintf(format, argptr);
 
 	va_end(argptr);
+
+	puts("\n\n");
 }
 
 void compile_error(int line, int pos, const char *format, ...)
 {
-	printf("\x1b[101mCompile Error\x1b[0m on line %i at %i:\n", line, pos);
+	printf("\n\x1b[101mCompile Error\x1b[49m\x1b[31m on line %i at position %i:\x1b[0m\n", line, pos);
 	
 	va_list argptr;
 	va_start(argptr, format);
 	
-	printf(format, argptr);
+	vprintf(format, argptr);
 
 	va_end(argptr);
 	

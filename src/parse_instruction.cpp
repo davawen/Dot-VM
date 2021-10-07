@@ -174,11 +174,15 @@ void tokenize(const char *filename, std::vector<Token> &tokens)
 	char *next = NULL;
 	char *first = strtok_r(buffer, "\n", &next);
 	
+	// TODO: Change this to reflect real file positions
+	// Maybe using some sort of spacing map ?
+	int line = 1;
 	do
 	{
 		char *part;
 		char *posn = NULL;
 		
+		int pos = 0;
 		//Loops over the string to find the amount of arguments, and cleans up trailing spaces / commas
 		// int instructionLength = next - first;
 
@@ -216,19 +220,21 @@ void tokenize(const char *filename, std::vector<Token> &tokens)
 		
 		if(part == NULL) continue; // Empty line
 		
-		printf("\x1b[1m\x1b[93m[%s]\x1b[0m\n", part);
+		// printf("\x1b[1m\x1b[93m[%s]\x1b[0m\n", part);
+
+		tokens.push_back( Token( Token::INSTRUCTION, std::string(part), line, pos ) );
 		
-		tokens.push_back( Token( Token::INSTRUCTION, std::string(part), 0, 0 ) );
-		
+		pos = posn - first;
 		part = strtok_r(NULL, ",", &posn); // <- Then it gets the arguments
 		
 		while(part != NULL)
 		{
 			if(part[0] == '$') // TODO: recursive dereference
 			{
-				tokens.push_back( Token( Token::OPERATOR, "$", 0, 0 ) );
+				tokens.push_back( Token( Token::OPERATOR, "$", line, pos ) );
 
 				part++;
+				pos++;
 			}
 			
 			Token::Type tokenType;
@@ -246,14 +252,14 @@ void tokenize(const char *filename, std::vector<Token> &tokens)
 					
 					if(newPart == NULL)
 					{
-						throw std::runtime_error("Error: non-terminated string");	
+						compile_error(line, pos + (ptr - part), "Non-terminated string.");
 					}
 					
 					// NOTE: This doesn't move anything, just replace the NUL at the end of part with a colon
 					// NOTE: So, this could just be replaced by *(newPart - 1) = ','
 					part = strcat(part, newPart);
 					
-					ptr = part;
+					//ptr = part; // NOTE: This is stupid, it means I'm retraversing the entire string for no fucking reason
 					while(*(++ptr + 1));
 				}
 				*(ptr) = '\0'; // reduce length by 1
@@ -281,14 +287,17 @@ void tokenize(const char *filename, std::vector<Token> &tokens)
 
 			}
 			
-			printf("\x1b[33m[%s]\x1b[0m\n", part);
+			// printf("\x1b[33m[%s]\x1b[0m\n", part);
 			
-			tokens.push_back( Token( tokenType, std::string(part), 0, 0 ) );	
+			tokens.push_back( Token( tokenType, std::string(part), line, pos ) );	
 			
+			pos = posn - first;
 			part = strtok_r(NULL, ",", &posn);
 		}
 
-		tokens.push_back( Token(Token::NEWLINE, "\n", 0, 0) );
+		tokens.push_back( Token(Token::NEWLINE, "\n", line, pos) );
+
+		line++;
 	}
 	while((first = strtok_r(NULL, "\n", &next)) != NULL);
 	
@@ -304,8 +313,6 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Expression> &exp
 
 	while(idx < tokens.size())
 	{
-		puts("\n");
-
 		Token &token = tokens[idx++];
 		
 		int numTokens = 0;

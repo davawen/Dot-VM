@@ -49,15 +49,15 @@ int main(int argc, char **argv)
 		printf("Error: incorrect file given.\n");
 		return EXIT_FAILURE;
 	}
-	
-	
 	std::vector<Token> tokens;
 
 	tokenize(*file, tokens);
 
 	for(auto &token : tokens)
 	{
-		printf("Token, type: %i, value: %s\n", token.type, token.value.c_str());
+		if(token.type == Token::NEWLINE) continue;
+
+		printf("Token, type: %i, value: %-10s, line: %i, pos: %i\n", token.type, token.value.c_str(), token.line, token.pos);
 	}
 
 	// Parse file
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 	parse_instructions(tokens, expressions);
 	
 
-	//printf("\n");
+	printf("\n");
 	std::for_each(expressions.begin(), expressions.end(), [](Expression &ins){ std::cout << ins << '\n'; });
 	//
 	

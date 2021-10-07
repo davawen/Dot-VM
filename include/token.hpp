@@ -18,22 +18,22 @@ struct Token
 
 	/// Length of the string 'value'
 	
-	int pos;
 	int line;
+	int pos;
 
 	Token()
 	{
 		this->type = Type::INSTRUCTION;
 		this->value = "";
-		this->pos = 0;
 		this->line = 0;
+		this->pos = 0;
 	}
 
-	Token(Type type, std::string value, int pos, int line)
+	Token(Type type, std::string value, int line, int pos)
 	{
 		this->type = type;
 		this->value = value;
-		this->pos = pos;
 		this->line = line;
+		this->pos = pos;
 	}
 };
