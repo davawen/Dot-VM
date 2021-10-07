@@ -1,10 +1,9 @@
-# Simple-VM
+# Dot-VM
 
 ## Description
 
 The goal of this project was to learn a bit more about how things function at a low level, by constructing a small assembly like programming language and executing it.
 
-While this is better described as an interpreter than as a VM, I find the name cute, so I'll keep it :p \
 The parser and interpreter are handwritten in C++.
 
 ## Language description
@@ -74,7 +73,7 @@ More will be explained in the **Functions** header.
 
 ### **Instructions**
 
-The language is (currently) composed of these 18 instructions :
+The language is (currently) composed of these 19 instructions :
 -	Stack manipulation : `push` and `pop`
 	```assembly
 	push [value...]
@@ -190,9 +189,7 @@ The language is (currently) composed of these 18 instructions :
 		; Which translates to : 
 		; 'equal', 'less than', 'less or equal',
 		; 'greater than', 'greater or equal' and 'not equal'
-		
-		ifeq $reg, $sp ; If no condition is given, 'eq' will be assumed
-	
+			
 	call [label]
 	; Jumps to a label and sets the '$$' label to the next instruction
 	; Call is functionally equivalent to 'jump', but it is used to invoke functions
@@ -203,13 +200,22 @@ The language is (currently) composed of these 18 instructions :
 		; Jumps to label func, and set label $$ to the next instruction
 		; In this case, a push instruction
 	```
--	Other : `print`
+-	Other : `print`, `syscall`
 	```assembly
 	print [(string | value)...]
 	; Will print the given characters to stdout
 	
 		print "Hello, world!\n" ; Prints "Hello, World!" and a line feed
 		print "The value of eax is ", $eax, "\n" ; Concatenation of values
+	
+	syscall
+	syscall [value]
+	; Calls the given syscall
+	; Arguments are taken from the stack given the syscall
+		
+		; This exits the program manually
+		push 0
+		syscall 60
 	```
 
 ### **Functions**
@@ -243,5 +249,7 @@ Here is an exemple function :
 	
 ```
 
-The `$$` label is defined as a stack, so functions can call themselves or other functions. \
-This also means that `jump`-ing to a function isn't allowed, as the `$$` label wouldn't be defined at the end of it.
+The `$$` label is defined as a stack, so functions can call themselves or other functions.
+
+As the `$$` label represents returning, jumping to it from the main program will thus exit the program. \
+Note: Traditionally, the exit code is set with `reg` and exit is handled automatically by the compiler, however this can be disabled through a flag and done manually through a syscall.
