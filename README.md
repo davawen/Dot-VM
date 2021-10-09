@@ -176,7 +176,8 @@ The language is (currently) composed of these 19 instructions :
 	; Throws an error if the label doesn't exists
 
 		jump label ; Jumps to the label 'label'
-
+	
+	ifeq [operator]
 	ifeq [operator], [value], [value]
 	; Compares two values together based on the given operator
 	; Skips the next instruction if the condition is false
@@ -189,7 +190,10 @@ The language is (currently) composed of these 19 instructions :
 		; Which translates to : 
 		; 'equal', 'less than', 'less or equal',
 		; 'greater than', 'greater or equal' and 'not equal'
-			
+		
+		ifeq eq
+		; Pops two values from the stack and only execute the next instruction if they are equal
+
 	call [label]
 	; Jumps to a label and sets the '$$' label to the next instruction
 	; Call is functionally equivalent to 'jump', but it is used to invoke functions
