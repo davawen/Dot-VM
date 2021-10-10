@@ -1,6 +1,6 @@
 : .start
 	mov reg, 0
-	
+
 	: loop
 		mod $reg, 15
 		ifeq ne, $sp, 0
@@ -21,7 +21,7 @@
 		
 		jump finish_print
 		
-		: not_print_fizz	
+		: not_print_fizz; IMPORTANT: get rid of trailing whitespace, it almost fucked me up big time right here
 		pop
 
 		mod $reg, 5

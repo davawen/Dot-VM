@@ -1,8 +1,10 @@
 #pragma once
 
-constexpr unsigned long hash(const char *str)
+#include <cstdint>
+
+constexpr intptr_t hash(const char *str)
 {
-    unsigned long hash = 5381;
+    intptr_t hash = 5381;
     char c = *str;
 
     while((c = *str++))

@@ -229,7 +229,8 @@ void interpret(std::vector<Expression> &expressions)
 				if(match == expressions.end())
 				{
 					// TODO: Move this to "compilation" step
-					runtime_warning("Label does not exists."); 
+					std::cout << it;
+					runtime_warning("Label does not exists. (%" PRIdPTR ")", it.value[0].val);
 					break;
 				}
 				
