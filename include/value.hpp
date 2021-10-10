@@ -15,9 +15,9 @@ struct Value
 		LABEL // Label name hash
 	} type;
 	
-	int64_t val;
+	intptr_t val;
 	
-	Value(Type type = Type::NUMBER, int64_t val = 0)
+	Value(Type type = Type::NUMBER, intptr_t val = 0)
 	{
 		this->type = type;
 		this->val = val;
@@ -28,10 +28,9 @@ struct Value
 		//if(type == Type::STRING) delete[] reinterpret_cast<char *>(value[i].val);
 		if(type == Type::STRING) delete reinterpret_cast<std::string *>(val);
 	}
-
-	int64_t operator=(int64_t val)
+	
+	bool is_register() const
 	{
-		this->val = val;
-		return val;
+		return type == Type::REG || type == Type::REG_VALUE;
 	}
 };

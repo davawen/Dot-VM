@@ -2,6 +2,14 @@
 
 Instruction::Type get_instruction_type(const char *str)
 {
+	const char *ptr = str;
+
+	while(*ptr)
+	{
+		printf("%c\n", *ptr);
+		ptr++;
+	}
+
 	switch(hash(str))
 	{
 		case hash("push"):
@@ -16,8 +24,6 @@ Instruction::Type get_instruction_type(const char *str)
 			return Instruction::Type::MUL;
 		case hash("div"):
 			return Instruction::Type::DIV;
-		case hash("mod"):
-			return Instruction::Type::MOD;
 		case hash("and"):
 			return Instruction::Type::AND;
 		case hash("or"):
@@ -38,34 +44,30 @@ Instruction::Type get_instruction_type(const char *str)
 			return Instruction::Type::JUMP;
 		case hash("ifeq"):
 			return Instruction::Type::IFEQ;
-		case hash("call"):
-			return Instruction::Type::CALL;
 		case hash("print"):
 			return Instruction::Type::PRINT;
-		case hash("syscall"):
-			return Instruction::Type::SYSCALL;
 		default:
 			compile_error(0, 0, "Instruction type does not exist. Got: %s", str);
 			break;
 	}
 };
 
-std::string &handle_escape_sequences(std::string &str)
+char *handle_escape_sequences(char *str)
 {	
 	// March along the string and escape escape sequences along the way
 	// 'ptr' skips escape sequences, which are overwritten using 'idx'
 	
-	size_t index = 0;
-	size_t offset = 0;
-	for(; index < str.length(); index++)
+	char *ptr;
+	int offset = 0;
+	for(ptr = str; *ptr; ptr++)
 	{
-		char chr = str[index];
+		char chr = *ptr;
 
 		if(chr == '\\')
 		{
-			chr = str[++index];
+			chr = *++ptr;
 
-			if(index >= str.length()) compile_error(0, 0, "Unterminated escape sequence");
+			if(chr == '\0') throw std::runtime_error("Error: Unterminated escape sequence");
 			
 			switch(chr)
 			{
@@ -109,9 +111,9 @@ std::string &handle_escape_sequences(std::string &str)
 			;	
 		}
 
-		str[index - offset] = chr;
+		*(ptr - offset) = chr;
 	}
-	str.resize(index - offset);
+	*(ptr - offset) = '\0';
 
 	return str;
 }	
@@ -315,12 +317,13 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Expression> &exp
 		Token &token = tokens[idx++];
 		
 		int numArgs = 0;
-		while( tokens[idx + numArgs].type != Token::NEWLINE )
-		{		
-			numArgs++;
+		
+		const char *str___ = token.value.c_str();
+		if(hash(str___) == hash(":"))
+		{
+			printf("REEEEE\n");
 		}
-
-		Instruction::Type instructionType = get_instruction_type(token.value.c_str());
+		Instruction::Type instructionType = get_instruction_type(str___);
 		Value *args = numArgs > 0 ? new Value[numArgs] : nullptr;
 		int argIdx = 0;
 

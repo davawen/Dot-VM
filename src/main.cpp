@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 	{
 		if(token.type == Token::NEWLINE) continue;
 
-		printf("Token, type: %i, value: %-10s, line: %i, pos: %i\n", token.type, token.value.c_str(), token.line, token.pos);
+		printf("Token, type: %i, value: \"%-10s\", line: %i, pos: %i\n", token.type, token.value.c_str(), token.line, token.pos);
 	}
 
 	// Parse file
@@ -71,9 +71,9 @@ int main(int argc, char **argv)
 	//
 	
 
-	//printf("\n[STARTING EXECUTION FROM HERE]\n\n");
+	printf("\n[STARTING EXECUTION FROM HERE]\n\n");
 	//
-	//interpret(expressions);
+	interpret(expressions);
 
 	return 0;
 }

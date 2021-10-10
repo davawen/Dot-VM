@@ -65,6 +65,9 @@ inline std::ostream &operator<<(std::ostream &os, const Expression &expression)
 		case Instruction::Type::DIV:
 			os << "div";
 			break;
+		case Instruction::Type::MOD:
+			os << "mod";
+			break;
 		case Instruction::Type::AND:
 			os << "and";
 			break;
@@ -95,8 +98,14 @@ inline std::ostream &operator<<(std::ostream &os, const Expression &expression)
 		case Instruction::Type::IFEQ:
 			os << "ifeq";
 			break;
+		case Instruction::Type::CALL:
+			os << "call";
+			break;
 		case Instruction::Type::PRINT:
 			os << "print";
+			break;
+		case Instruction::Type::SYSCALL:
+			os << "syscall";
 			break;
 	}
 	

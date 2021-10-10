@@ -7,7 +7,6 @@ struct Token
 	enum Type
 	{
 		INSTRUCTION, // Pretty straigth forward
-		OPERATOR, // -> Operator $
 		LITERAL, // Registers, Labels
 		NUMBER, 
 		STRING,

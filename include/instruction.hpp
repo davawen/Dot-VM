@@ -5,12 +5,12 @@ struct Instruction
 	enum struct Type
 	{
 		PUSH, POP,
-		ADD, SUB, MUL, DIV,
+		ADD, SUB, MUL, DIV, MOD,
 		AND, OR, XOR, NOT,
 		LSHIFT, RSHIFT,
 		MOV,
-		LABEL, JUMP, IFEQ,
-		PRINT // Will probably get replaced by some sort of sys_call
+		LABEL, JUMP, IFEQ, CALL,
+		PRINT, SYSCALL // Will probably get replaced by some sort of sys_call
 	};
 	
 	Type type;

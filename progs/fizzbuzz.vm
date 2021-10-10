@@ -1,0 +1,47 @@
+: .start
+	mov reg, 0
+	
+	: loop
+		mod $reg, 15
+		ifeq ne, $sp, 0
+		jump not_print_fizzbuzz
+		
+		print "FizzBuzz\n"
+
+		jump finish_print
+		
+		: not_print_fizzbuzz
+		pop
+
+		mod $reg, 3
+		ifeq ne, $sp, 0
+		jump not_print_fizz
+		
+		print "Fizz\n"
+		
+		jump finish_print
+		
+		: not_print_fizz	
+		pop
+
+		mod $reg, 5
+		ifeq ne, $sp, 0
+		jump not_print_buzz
+		
+		print "Buzz\n"
+		
+		jump finish_print
+		
+		: not_print_buzz
+		
+		print $reg, "\n"
+
+		: finish_print
+		
+		pop
+		
+		add $reg, 1
+		pop reg
+		
+		ifeq lt, $reg, 100
+		jump loop

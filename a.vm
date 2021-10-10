@@ -1,2 +1,0 @@
-: .start ; Program starts here
-	mov reg, "String\n"
