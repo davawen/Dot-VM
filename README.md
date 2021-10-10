@@ -31,6 +31,9 @@ An argument can either be :
 -	A string
 -	A register
 
+Arguments are passed to instructions through the syntax seen above, but lots of instructions are overloaded to get they're arguments from the stack. \
+In that case, arguments are popped from the stack in order left to right.
+
 ### **Numbers**
 Numbers are interpreted using the `strtoll` C function, meaning they can use the following prefixes :
 -	Numbers starting by `0` are base-8 :
@@ -73,7 +76,7 @@ More will be explained in the **Functions** header.
 
 ### **Instructions**
 
-The language is (currently) composed of these 19 instructions :
+The language is (currently) composed of these 20 instructions :
 -	Stack manipulation : `push` and `pop`
 	```assembly
 	push [value...]
@@ -93,7 +96,7 @@ The language is (currently) composed of these 19 instructions :
 		
 		pop reg ; Removes the top of the stack and stores it in register 'reg'
 	```
--	Arithmethic instructions : `add`, `sub`, `mul` and `div`
+-	Arithmethic instructions : `add`, `sub`, `mul`, `div` and `mod`
 	```assembly
 	add
 	add [value 1], [value 2]
@@ -109,13 +112,19 @@ The language is (currently) composed of these 19 instructions :
 
 	mul
 	mul [value 1], [value 2]
-	; Multiply two values together, and pushes the result to the stack
+	; Multiplies two values together, and pushes the result to the stack
 	; Works in the same way as the 'add' instruction
 	
 	div
 	div [value 1], [value 2]
-	; Divide the first value by the second value, and pushes the result to the stack
+	; Divides the first value by the second value, and pushes the result to the stack
 	; Works in the same way as the 'add' instruction
+	
+	mod
+	mod [value 1], [value 2]
+	; Divides the first value by the second value, and pushes the remainder to the stack
+	; Works in the same way as the `div` instruction
+
 	```
 -	Bitwise instructions : `and`, `or`, `xor`, `not`, `lshift`, `rshift`
 	```assembly
@@ -213,13 +222,13 @@ The language is (currently) composed of these 19 instructions :
 		print "The value of eax is ", $eax, "\n" ; Concatenation of values
 	
 	syscall
-	syscall [value]
+	syscall [number of args], [syscall id]
 	; Calls the given syscall
-	; Arguments are taken from the stack given the syscall
+	; Arguments for the syscall are taken from the stack
 		
 		; This exits the program manually
 		push 0
-		syscall 60
+		syscall 1, 60
 	```
 
 ### **Functions**
