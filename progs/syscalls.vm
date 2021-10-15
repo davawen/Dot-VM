@@ -1,0 +1,4 @@
+: .start
+	mov reg, 65
+	push 1, reg, 1
+	syscall 3, 1

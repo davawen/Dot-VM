@@ -5,44 +5,42 @@
 #include "instruction.hpp"
 #include "value.hpp"
 
-// TODO: Find better name for this
-// Hesitating with "Statement"
-struct Expression
+struct Statement
 {
 	Instruction ins;
-	Value *value; // Should be able to hold a pointer value
-	int numValues;
+	Value *args; // Should be able to hold a pointer value
+	int numArgs;
 	
-	Expression(Instruction ins, Value *value = nullptr, int numValues = 0)
+	Statement(Instruction ins, Value *value = nullptr, int numValues = 0)
 	{
 		this->ins = ins;
-		this->value = value;
-		this->numValues = numValues;
+		this->args = value;
+		this->numArgs = numValues;
 	}
 	
-	Expression(Expression &&other)
+	Statement(Statement &&other)
 	{
 		ins = other.ins;
-		value = other.value;
-		numValues = other.numValues;
+		args = other.args;
+		numArgs = other.numArgs;
 		
-		other.value = nullptr;
+		other.args = nullptr;
 	}
 	
-	~Expression()
+	~Statement()
 	{
-		if(value != nullptr)
+		if(args != nullptr)
 		{
 			//for(int i = 0; i < numValues; i++)
 			//{
 			//}
 			
-			delete[] value;
+			delete[] args;
 		}
 	}
 };
 
-inline std::ostream &operator<<(std::ostream &os, const Expression &expression)
+inline std::ostream &operator<<(std::ostream &os, const Statement &expression)
 {
 	os << "Instruction: ";
 	switch(expression.ins.type)
@@ -109,18 +107,18 @@ inline std::ostream &operator<<(std::ostream &os, const Expression &expression)
 			break;
 	}
 	
-	if(expression.value != nullptr)
+	if(expression.args != nullptr)
 	{
 		os << ", Value: ";
-		for(int i = 0; i < expression.numValues; i++)
+		for(int i = 0; i < expression.numArgs; i++)
 		{
-			if(expression.value[i].type == Value::Type::STRING)
+			if(expression.args[i].type == Value::Type::STRING)
 			{
-				os << '\"' << *reinterpret_cast<std::string *>(expression.value[i].val) << "\"(Type: ";
+				os << '\"' << *reinterpret_cast<std::string *>(expression.args[i].val) << "\"(Type: ";
 			}
-			else os << expression.value[i].val << "(Type: ";
+			else os << expression.args[i].val << "(Type: ";
 
-			os << expression.value[i].type << "), ";
+			os << expression.args[i].type << "), ";
 		}
 	}
 	

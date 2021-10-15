@@ -1,0 +1,27 @@
+: func; (int n)
+	
+	ifeq gt, $sp, 100
+	jump $$
+
+	print $sp, "\n"
+
+	mov reg, $sp
+	push 2, $reg; Push two, then push previous top of the stack
+	
+	div; Divide value of top by two
+
+	add
+	
+	call func
+	
+	jump $$
+	
+: .start
+	
+	push 3
+
+	call func
+	
+	print "Reached end"
+
+	;jump $$

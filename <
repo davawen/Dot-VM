@@ -1,0 +1,22 @@
+#pragma once
+
+#include <cstdlib>
+#include <cstdio>
+
+template <typename T>
+class Stack
+{
+private:
+	T *elems;
+	
+	int size;
+	int reserved;
+	
+public:
+	
+
+	T *top();
+
+	/// Warning, this is a pointer to internal data, use at your own risk.
+	T *data();
+};

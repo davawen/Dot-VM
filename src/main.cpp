@@ -13,6 +13,7 @@
 #include <cinttypes>
 
 #include "instruction.hpp"
+#include "statement.hpp"
 #include "parse_instruction.hpp"
 
 #include "interpreter.hpp"
@@ -61,19 +62,19 @@ int main(int argc, char **argv)
 	}
 
 	// Parse file
-	std::vector<Expression> expressions;
+	std::vector<Statement> statements;
 
-	parse_instructions(tokens, expressions);
+	parse_instructions(tokens, statements);
 	
 
 	printf("\n");
-	std::for_each(expressions.begin(), expressions.end(), [](Expression &ins){ std::cout << ins << '\n'; });
+	std::for_each(statements.begin(), statements.end(), [](Statement &ins){ std::cout << ins << '\n'; });
 	//
 	
 
 	printf("\n[STARTING EXECUTION FROM HERE]\n\n");
 	//
-	interpret(expressions);
+	interpret(statements);
 
 	return 0;
 }

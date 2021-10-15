@@ -1,15 +1,17 @@
 #include <iostream>
 #include <vector>
-#include <sys/syscall.h>
+#include <stack>
 
+#include <sys/syscall.h>
+#include <unistd.h>
 #include <cinttypes>
 
 #include "value.hpp"
-#include "expression.hpp"
+#include "statement.hpp"
 #include "parse_instruction.hpp"
 #include "hash.hpp"
 
-void interpret(std::vector<Expression> &expressions);
+void interpret(std::vector<Statement> &statements);
 
-void compile_to_c_linux(std::vector<Expression> &expressions);
-void compile_to_nasm_linux(std::vector<Expression> &expressions);
+void compile_to_c_linux(std::vector<Statement> &statements);
+void compile_to_nasm_linux(std::vector<Statement> &statements);

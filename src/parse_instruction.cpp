@@ -1,5 +1,7 @@
 #include "parse_instruction.hpp"
+#include "instruction.hpp"
 
+// TODO: Move this to Instruction struct
 Instruction::Type get_instruction_type(const char *str)
 {
 	switch(hash(str))
@@ -45,8 +47,8 @@ Instruction::Type get_instruction_type(const char *str)
 		case hash("syscall"):
 			return Instruction::Type::SYSCALL;
 		default:
-			compile_error(0, 0, "Instruction type does not exist. Got: %s", str);
-			break;
+			compile_error(0, 0, "Instruction type does not exist. Got: %s", str); // Program exits here
+			return Instruction::Type::AND; // Make compiler happy
 	}
 };
 
@@ -306,7 +308,7 @@ void tokenize(const char *filename, std::vector<Token> &tokens)
 }
 
 /// DONE: Split this into a lexing step and a parsing step
-void parse_instructions(std::vector<Token> &tokens, std::vector<Expression> &expressions)
+void parse_instructions(std::vector<Token> &tokens, std::vector<Statement> &statements)
 {
 	unsigned long idx = 0;
 
@@ -346,7 +348,7 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Expression> &exp
 					break;
 				}
 				case Token::LITERAL:
-					if(instructionType == Instruction::Type::LABEL || instructionType == Instruction::Type::JUMP || (instructionType == Instruction::Type::IFEQ && i == 0))
+					if(instructionType == Instruction::Type::LABEL || instructionType == Instruction::Type::JUMP || instructionType == Instruction::Type::CALL || (instructionType == Instruction::Type::IFEQ && i == 0))
 					{
 						// TODO: Just store it like a fucking string
 						args[argIdx].val = hash(curToken.value.c_str());
@@ -405,7 +407,7 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Expression> &exp
 			}
 		}
 		
-		expressions.push_back( Expression( Instruction( instructionType ), args, numArgs )  );
+		statements.push_back( Statement( Instruction( instructionType ), args, numArgs )  );
 			
 		idx += numArgs + 1; // args + new line
 	}

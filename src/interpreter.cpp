@@ -1,17 +1,15 @@
 #include "interpreter.hpp"
-#include <cstdint>
 
-void interpret(std::vector<Expression> &expressions)
+void interpret(std::vector<Statement> &statements)
 {
-	constexpr int STACK_SIZE = 10000;
-	intptr_t stack[STACK_SIZE];
+	std::stack<intptr_t> stack;
+	intptr_t *sp = &stack.top();
 	
 	intptr_t valReg = 0, valEax = 0, valVoid = 0;
 	
 	intptr_t *regReg = &valReg, *regEax = &valEax, *regVoid = &valVoid;
 	
-	intptr_t *sp = stack-1;
-
+	
 	// Using a lambda as this is tied to the execution context
 	auto get_register_value = [&](const Value &value) -> intptr_t
 	{
@@ -46,7 +44,7 @@ void interpret(std::vector<Expression> &expressions)
 		else return *ptr; // REG_VALUE
 	};
 	
-	// If the value is a register, return its value, else return the value of the value
+	// If the value is a register, return get_register_value, else return the normal value
 	auto get_value_if_register = [&](const Value &value) -> intptr_t
 	{
 		if(value.is_register())
@@ -57,190 +55,193 @@ void interpret(std::vector<Expression> &expressions)
 
 	auto pop_stack = [&]() -> intptr_t
 	{
-		if(sp == stack - 1)
+		if(stack.empty())
 		{
 			runtime_error("No element in stack!");
 		}
+		
+		intptr_t value = stack.top();
+		stack.pop();
+		sp--;
 
-		return *sp--;
+		return value;
 	};
 	
 	auto push_stack = [&](intptr_t val)
 	{
+		stack.push(val);
 		sp++;
-		*sp = val;
 	};
 
-	auto handle_arithmetic_instruction = [&](const Expression &expr, intptr_t (*op)(intptr_t, intptr_t))
+	auto handle_arithmetic_instruction = [&](const Statement &stm, intptr_t (*op)(intptr_t, intptr_t))
 	{
 			intptr_t left, right;
-			if(expr.numValues == 0)
+			if(stm.numArgs == 0)
 			{
 				left = pop_stack();
 				right = pop_stack();
 			}
 			else
 			{
-				left = get_value_if_register(expr.value[0]);
-				right = get_value_if_register(expr.value[1]);
+				left = get_value_if_register(stm.args[0]);
+				right = get_value_if_register(stm.args[1]);
 			}	
 			
 			push_stack( op(left, right) );
 	};
 	
-	auto handle_shift_instruction = [&](const Expression &expr, intptr_t (*op)(intptr_t, intptr_t))
+	auto handle_shift_instruction = [&](const Statement &stm, intptr_t (*op)(intptr_t, intptr_t))
 	{
 		// shift [amount]
 		// shift [value], [amount]
 		//
-		intptr_t amount = get_value_if_register( expr.value[expr.numValues == 2] );
+		intptr_t amount = get_value_if_register( stm.args[stm.numArgs == 2] );
 		
-		if(expr.numValues == 1)
+		if(stm.numArgs == 1)
 		{
 			push_stack( pop_stack() << amount );
 		}
 		else
 		{
-			if(expr.value[0].is_register())
-				push_stack( op( get_register_value(expr.value[0]), amount ) );
+			if(stm.args[0].is_register())
+				push_stack( op( get_register_value(stm.args[0]), amount ) );
 			else
-				push_stack( op( expr.value[0].val, amount ) );
+				push_stack( op( stm.args[0].val, amount ) );
 		}
 
 	};
 
-	auto iterator = expressions.begin();
+	auto iterator = statements.begin();
 	// Search for start label
-	for(; iterator != expressions.end(); iterator++)
+	for(; iterator != statements.end(); iterator++)
 	{
-		if(iterator->ins.type == Instruction::Type::LABEL && iterator->value[0].val == hash(".start"))
+		if(iterator->ins.type == Instruction::Type::LABEL && iterator->args[0].val == hash(".start"))
 			break;
 	}
 
-	if(iterator == expressions.end())
+	if(iterator == statements.end())
 	{
 		// TODO: Check this at compile time
 		compile_error(0, 0, "No entry point (.start)");
 	}
+	
+	std::stack<std::vector<Statement>::iterator> callstack;
+	callstack.push(statements.end());
 
-	for(; iterator != expressions.end(); iterator++)
+	for(; iterator != statements.end(); iterator++)
 	{
-		auto &it = *iterator;
+		auto &stm = *iterator;
 
-		// Error checking
-		if(sp < stack-1)
-		{
-			runtime_error("Stack underflow");
-		}
-		
-		// TODO: The stack should probably grow
-		if(sp > stack + STACK_SIZE)
-		{
-			runtime_error("Stack overflow");
-		}
+		// DONE: The stack should probably grow
 		
 		// TODO: Needs a lot more helper functions 
-		switch(it.ins.type)
+		switch(stm.ins.type)
 		{
 			case Instruction::Type::PUSH:
-				for(int i = 0; i < it.numValues; i++)
+				for(int i = 0; i < stm.numArgs; i++)
 				{
-					if(it.value[i].is_register())
-						push_stack(get_register_value(it.value[i]));
-					else
-						push_stack(it.value[i].val);
+					push_stack(get_value_if_register(stm.args[i]));
 				}
 				break;
 			case Instruction::Type::POP:
 				// TODO: Implement offset
-				if(it.numValues == 1)
+				if(stm.numArgs == 1)
 				{
-					*reinterpret_cast<intptr_t *>(get_register_value(it.value[0])) = pop_stack();
+					*reinterpret_cast<intptr_t *>(get_register_value(stm.args[0])) = pop_stack();
 				}
 				else pop_stack();
 				break;
 			case Instruction::Type::ADD:
-				handle_arithmetic_instruction(it, [](auto left, auto right){ return left + right; });
+				handle_arithmetic_instruction(stm, [](auto left, auto right){ return left + right; });
 				break;
 			case Instruction::Type::SUB:
-				handle_arithmetic_instruction(it, [](auto left, auto right){ return left - right; });
+				handle_arithmetic_instruction(stm, [](auto left, auto right){ return left - right; });
 				break;
 			case Instruction::Type::MUL:
-				handle_arithmetic_instruction(it, [](auto left, auto right){ return left * right; });
+				handle_arithmetic_instruction(stm, [](auto left, auto right){ return left * right; });
 				break;
 			case Instruction::Type::DIV: // DONE: Store remainder somewhere
-				handle_arithmetic_instruction(it, [](auto left, auto right){ return left / right; });
+				handle_arithmetic_instruction(stm, [](auto left, auto right){ return left / right; });
 				break;
 			case Instruction::Type::MOD:
-				handle_arithmetic_instruction(it, [](auto left, auto right){ return left % right; });
+				handle_arithmetic_instruction(stm, [](auto left, auto right){ return left % right; });
 				break;
 			case Instruction::Type::AND:
-				handle_arithmetic_instruction(it, [](auto left, auto right){ return left & right; });
+				handle_arithmetic_instruction(stm, [](auto left, auto right){ return left & right; });
 				break;
 			case Instruction::Type::OR:
-				handle_arithmetic_instruction(it, [](auto left, auto right){ return left | right; });
+				handle_arithmetic_instruction(stm, [](auto left, auto right){ return left | right; });
 				break;
 			case Instruction::Type::XOR:
-				handle_arithmetic_instruction(it, [](auto left, auto right){ return left ^ right; });
+				handle_arithmetic_instruction(stm, [](auto left, auto right){ return left ^ right; });
 				break;
 			case Instruction::Type::NOT:
-				if(it.numValues == 0)
+				if(stm.numArgs == 0)
 				{
 					push_stack( ~pop_stack() );
 					//*sp = ~*sp; This does not check if the stack is empty
 				}
 				else
 				{
-					if(it.value[0].is_register())
-						push_stack( ~get_register_value(it.value[0]) );
-					else
-						push_stack( ~it.value[0].val );
+					push_stack( ~get_value_if_register(stm.args[0]) );
 				}
 				break;
 			case Instruction::Type::LSHIFT:
-				handle_shift_instruction(it, [](auto left, auto right){ return left << right; });
+				handle_shift_instruction(stm, [](auto left, auto right){ return left << right; });
 				break;
 			case Instruction::Type::RSHIFT:
-				handle_shift_instruction(it, [](auto left, auto right){ return left >> right; });
+				handle_shift_instruction(stm, [](auto left, auto right){ return left >> right; });
 				break;
 			case Instruction::Type::MOV:
-				*reinterpret_cast<intptr_t *>(get_register_value(it.value[0])) = get_value_if_register(it.value[1]);
+				*reinterpret_cast<intptr_t *>(get_register_value(stm.args[0])) = get_value_if_register(stm.args[1]);
 				break;
 			case Instruction::Type::LABEL: // Pass through
 				break;
 			case Instruction::Type::JUMP:
+			case Instruction::Type::CALL: // Jump and call both do esssentially the same thing, call just pushes to the callstack
 			{
 				// Find matching label with a linear search
 				// Efficicency is shit
 				// Labels should be stored in their own vector
 				
-				auto match = expressions.end();
-				for(auto itlabel = expressions.begin(); itlabel != expressions.end(); itlabel++)
+				auto match = statements.end();
+				
+				if(stm.args[0].val == hash("$$"))
 				{
-					if(itlabel->ins.type != Instruction::Type::LABEL) continue;
-
-					if(itlabel->value->val == it.value->val)
+					match = callstack.top();
+					callstack.pop();
+				}
+				else
+				{
+					for(auto itlabel = statements.begin(); itlabel != statements.end(); itlabel++)
 					{
-						match = itlabel;
-						break;
+						if(itlabel->ins.type != Instruction::Type::LABEL) continue;
+
+						if(itlabel->args[0].val == stm.args[0].val)
+						{
+							match = itlabel;
+							break;
+						}
 					}
 				}
 
-				if(match == expressions.end())
+				if(match == statements.end())
 				{
 					// TODO: Move this to "compilation" step
-					std::cout << it;
-					runtime_warning("Label does not exists. (%" PRIdPTR ")", it.value[0].val);
+					std::cout << stm;
+					runtime_warning("Label does not exists. (%" PRIdPTR ")", stm.args[0].val);
 					break;
 				}
 				
+				if(stm.ins.type == Instruction::Type::CALL) callstack.push(iterator); // iterator is incremented by the for loop
+
 				iterator = match;
 				break;
 			}
 			case Instruction::Type::IFEQ: // Only evaluates next instruction if condition is true
 				// ifeq [operator], [value], [value]
 				bool (*op)(intptr_t, intptr_t);
-				switch(it.value[0].val)
+				switch(stm.args[0].val)
 				{
 					case hash("eq"):
 						op = [](intptr_t left, intptr_t right){ return left == right; };
@@ -266,22 +267,22 @@ void interpret(std::vector<Expression> &expressions)
 				}
 				
 				intptr_t left, right;
-				if(it.numValues == 1)
+				if(stm.numArgs == 1)
 				{
 					left = pop_stack();
 					right = pop_stack();
 				}
 				else
 				{
-					if( it.value[1].is_register() )
-						left = get_register_value(it.value[1]);
+					if( stm.args[1].is_register() )
+						left = get_register_value(stm.args[1]);
 					else
-						left = it.value[1].val;
+						left = stm.args[1].val;
 
-					if( it.value[2].is_register() )
-						right = get_register_value(it.value[2]);
+					if( stm.args[2].is_register() )
+						right = get_register_value(stm.args[2]);
 					else
-						right = it.value[2].val;
+						right = stm.args[2].val;
 				}
 				
 				if(!op(left, right))
@@ -291,21 +292,21 @@ void interpret(std::vector<Expression> &expressions)
 
 				break;
 			case Instruction::Type::PRINT:
-				for(int i = 0; i < it.numValues; i++)
+				for(int i = 0; i < stm.numArgs; i++)
 				{
-					switch(it.value[i].type)
+					switch(stm.args[i].type)
 					{
 						case Value::Type::STRING:
-							printf("%s", handle_escape_sequences(*reinterpret_cast<std::string *>(it.value[i].val)).c_str());	
+							printf("%s", handle_escape_sequences(*reinterpret_cast<std::string *>(stm.args[i].val)).c_str());	
 							break;
 						case Value::Type::REG:
-							printf("%p", reinterpret_cast<void *>(get_register_value(it.value[i])));
+							printf("%p", reinterpret_cast<void *>(get_register_value(stm.args[i])));
 							break;
 						case Value::Type::REG_VALUE:
-							printf("%" PRIdPTR, get_register_value(it.value[i]));
+							printf("%" PRIdPTR, get_register_value(stm.args[i]));
 							break;
 						case Value::Type::NUMBER:
-							printf("%" PRIdPTR, it.value[i].val);
+							printf("%" PRIdPTR, stm.args[i].val);
 							break;
 						case Value::Type::LABEL:
 							runtime_error("A label was somehow used in a print.");
@@ -314,9 +315,36 @@ void interpret(std::vector<Expression> &expressions)
 				}
 				break;
 			case Instruction::Type::SYSCALL:
-				if(it.numValues == 0)
+				intptr_t syscallArgs, syscallId;
+
+				if(stm.numArgs == 0)
 				{
-					
+					syscallArgs = pop_stack();
+					syscallId = pop_stack();
+				}
+				else
+				{
+					syscallArgs = stm.args[0].val;
+					syscallId = stm.args[1].val;
+				}
+				
+				switch(syscallArgs) // Searching something better than this
+				{
+					case 0:
+						syscall(syscallId);
+						break;
+					case 1:
+						syscall(syscallId, pop_stack());
+						break;
+					case 2:
+						syscall(syscallId, pop_stack(), pop_stack());
+						break;
+					case 3:
+						syscall(syscallId, pop_stack(), pop_stack(), pop_stack());
+						break;
+					case 4:
+						syscall(syscallId, pop_stack(), pop_stack(), pop_stack(), pop_stack());
+						break;
 				}
 			default:
 				break;

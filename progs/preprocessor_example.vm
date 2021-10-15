@@ -1,0 +1,52 @@
+; NOT IMPLEMENTED
+
+#macro popifeq
+	push $reg
+	pop reg, 1
+
+	ifeq #(1), $reg, #(2)
+	jump #(macroid)True
+	
+	pop reg
+	jump #(macroid)False
+
+	: #(macroid)True
+		pop reg
+		#(nl1); Puts next statement (nEXT lINE 1) here
+	
+	: #(macroid)False
+
+
+	
+#endmacro
+
+: .start
+	
+	push 1
+
+	: .startStart
+		
+		mod $sp, 2
+		
+		#popifeq eq, 0
+		push 1
+
+		; Get translated to
+		push $reg
+		pop reg, 1
+
+		ifeq eq, $reg, 0
+		jump someRandomStringTrue
+
+		pop reg
+		jump someRandomStringFalse
+
+		: someRandomStringTrue
+			pop reg
+			push 1
+		
+		: someRandomStringFalse
+
+		push 1
+		add
+	
