@@ -1,0 +1,24 @@
+: exit
+	push 0
+	syscall 1, 60
+
+
+: .start
+	
+	mov reg, "ABCDEFGHIJ"
+	
+	add $reg, 16 ; Until C strings are used, need to add this offset to get the data of std::string
+	pop reg
+	
+	push 8, $reg, 1
+	syscall 3, 1
+	
+	;print $reg, " ", reg, "\n"
+
+	
+
+	;push 1
+
+	; TODO: Add ifneq, for my sanity
+	;ifeq ne, $sp, 1
+	;call exit

@@ -9,7 +9,6 @@ void interpret(std::vector<Statement> &statements)
 	
 	intptr_t *regReg = &valReg, *regEax = &valEax, *regVoid = &valVoid;
 	
-	
 	// Using a lambda as this is tied to the execution context
 	auto get_register_value = [&](const Value &value) -> intptr_t
 	{
@@ -194,6 +193,7 @@ void interpret(std::vector<Statement> &statements)
 				break;
 			case Instruction::Type::MOV:
 				*reinterpret_cast<intptr_t *>(get_register_value(stm.args[0])) = get_value_if_register(stm.args[1]);
+
 				break;
 			case Instruction::Type::LABEL: // Pass through
 				break;
@@ -324,27 +324,45 @@ void interpret(std::vector<Statement> &statements)
 				}
 				else
 				{
-					syscallArgs = stm.args[0].val;
-					syscallId = stm.args[1].val;
+					syscallArgs = get_value_if_register(stm.args[0]);
+					syscallId = get_value_if_register(stm.args[1]);
 				}
 				
+				// TIL order of evaluation of parameters is unspecified
+				intptr_t args[4];
 				switch(syscallArgs) // Searching something better than this
 				{
 					case 0:
 						syscall(syscallId);
 						break;
 					case 1:
-						syscall(syscallId, pop_stack());
+						args[0] = pop_stack();
+
+						syscall(syscallId, args[0]);
 						break;
 					case 2:
-						syscall(syscallId, pop_stack(), pop_stack());
+						args[0] = pop_stack();
+						args[1] = pop_stack();
+
+						syscall(syscallId, args[0], args[1]);
 						break;
 					case 3:
-						syscall(syscallId, pop_stack(), pop_stack(), pop_stack());
+						args[0] = pop_stack();
+						args[1] = pop_stack();
+						args[2] = pop_stack();
+
+						syscall(syscallId, args[0], args[1], args[2]);
 						break;
 					case 4:
-						syscall(syscallId, pop_stack(), pop_stack(), pop_stack(), pop_stack());
+						args[0] = pop_stack();
+						args[1] = pop_stack();
+						args[2] = pop_stack();
+						args[3] = pop_stack();
+
+						syscall(syscallId, args[0], args[1], args[2], args[3]);
 						break;
+					default:
+						runtime_error("Too much arguments used with syscall (% " PRIdPTR ", maximum is 4)", syscallArgs);
 				}
 			default:
 				break;
