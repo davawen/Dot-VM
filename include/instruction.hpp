@@ -1,4 +1,9 @@
 #pragma once
+#include <string>
+#include <unordered_map>
+
+#include "hash.hpp"
+#include "error_handling.hpp"
 
 struct Instruction
 {
@@ -15,8 +20,10 @@ struct Instruction
 	
 	Type type;
 	
-	Instruction(Instruction::Type type = Instruction::Type::PUSH)
-	{
-		this->type = type;
-	}
+	Instruction(Instruction::Type type = Instruction::Type::PUSH);
+	
+	static Instruction::Type name_to_type(std::string &name);
+	static Instruction::Type name_to_type(const char *name);
+
+	static const char *type_to_name(Instruction::Type type);
 };

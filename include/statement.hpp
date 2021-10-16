@@ -8,7 +8,7 @@
 struct Statement
 {
 	Instruction ins;
-	Value *args; // Should be able to hold a pointer value
+	Value *args;
 	int numArgs;
 	
 	Statement(Instruction ins, Value *value = nullptr, int numValues = 0)
@@ -40,85 +40,22 @@ struct Statement
 	}
 };
 
-inline std::ostream &operator<<(std::ostream &os, const Statement &expression)
+inline std::ostream &operator<<(std::ostream &os, const Statement &statement)
 {
-	os << "Instruction: ";
-	switch(expression.ins.type)
-	{
-		case Instruction::Type::PUSH:
-			os << "push";
-			break;
-		case Instruction::Type::POP:
-			os << "pop";
-			break;
-		case Instruction::Type::ADD:
-			os << "add";
-			break;
-		case Instruction::Type::SUB:
-			os << "sub";
-			break;
-		case Instruction::Type::MUL:
-			os << "mul";
-			break;
-		case Instruction::Type::DIV:
-			os << "div";
-			break;
-		case Instruction::Type::MOD:
-			os << "mod";
-			break;
-		case Instruction::Type::AND:
-			os << "and";
-			break;
-		case Instruction::Type::OR:
-			os << "or";
-			break;
-		case Instruction::Type::XOR:
-			os << "xor";
-			break;
-		case Instruction::Type::NOT:
-			os << "not";
-			break;
-		case Instruction::Type::LSHIFT:
-			os << "lshift";
-			break;
-		case Instruction::Type::RSHIFT:
-			os << "rshift";
-			break;
-		case Instruction::Type::MOV:
-			os << "mov";
-			break;
-		case Instruction::Type::LABEL:
-			os << "label";
-			break;
-		case Instruction::Type::JUMP:
-			os << "jump";
-			break;
-		case Instruction::Type::IFEQ:
-			os << "ifeq";
-			break;
-		case Instruction::Type::CALL:
-			os << "call";
-			break;
-		case Instruction::Type::PRINT:
-			os << "print";
-			break;
-		case Instruction::Type::SYSCALL:
-			os << "syscall";
-			break;
-	}
+	os << "Instruction: " << Instruction::type_to_name(statement.ins.type);
 	
-	if(expression.args != nullptr)
+	if(statement.args != nullptr)
 	{
 		os << ", Value: ";
-		for(int i = 0; i < expression.numArgs; i++)
+		for(int i = 0; i < statement.numArgs; i++)
 		{
-			if(expression.args[i].type == Value::Type::STRING)
+			if(statement.args[i].type == Value::Type::STRING)
 			{
-				os << '\"' << *reinterpret_cast<std::string *>(expression.args[i].val) << "\"(Type: ";
+				os << '\"' << *reinterpret_cast<std::string *>(statement.args[i].val) << "\"(Type: ";
 			}
-			else os << expression.args[i].val << "(Type: ";
+			else os << statement.args[i].val << "(Type: ";
 
-			os << expression.args[i].type << "), ";
+			os << statement.args[i].type << "), ";
 		}
 	}
 	

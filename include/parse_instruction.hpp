@@ -13,8 +13,6 @@
 #include "register.hpp"
 #include "error_handling.hpp"
 
-Instruction::Type get_instruction_type(const char *str);
-
 /// This iterates over a string and escapes the given sequences
 std::string &handle_escape_sequences(std::string &str);
 

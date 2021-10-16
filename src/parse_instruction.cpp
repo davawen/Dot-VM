@@ -1,57 +1,6 @@
 #include "parse_instruction.hpp"
 #include "instruction.hpp"
 
-// TODO: Move this to Instruction struct
-Instruction::Type get_instruction_type(const char *str)
-{
-	switch(hash(str))
-	{
-		case hash("push"):
-			return Instruction::Type::PUSH;
-		case hash("pop"):
-			return Instruction::Type::POP;
-		case hash("add"):
-			return Instruction::Type::ADD;
-		case hash("sub"):
-			return Instruction::Type::SUB;
-		case hash("mul"):
-			return Instruction::Type::MUL;
-		case hash("div"):
-			return Instruction::Type::DIV;
-		case hash("mod"):
-			return Instruction::Type::MOD;
-		case hash("and"):
-			return Instruction::Type::AND;
-		case hash("or"):
-			return Instruction::Type::OR;
-		case hash("xor"):
-			return Instruction::Type::XOR;
-		case hash("not"):
-			return Instruction::Type::NOT;
-		case hash("lshift"):
-			return Instruction::Type::LSHIFT;
-		case hash("rshift"):
-			return Instruction::Type::RSHIFT;
-		case hash("mov"):
-			return Instruction::Type::MOV;
-		case hash(":"):
-			return Instruction::Type::LABEL;
-		case hash("jump"):
-			return Instruction::Type::JUMP;
-		case hash("ifeq"):
-			return Instruction::Type::IFEQ;
-		case hash("call"):
-			return Instruction::Type::CALL;
-		case hash("print"):
-			return Instruction::Type::PRINT;
-		case hash("syscall"):
-			return Instruction::Type::SYSCALL;
-		default:
-			compile_error(0, 0, "Instruction type does not exist. Got: %s", str); // Program exits here
-			return Instruction::Type::AND; // Make compiler happy
-	}
-};
-
 std::string &handle_escape_sequences(std::string &str)
 {	
 	// March along the string and escape escape sequences along the way
@@ -322,7 +271,7 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Statement> &stat
 			numArgs++;
 		}
 
-		Instruction::Type instructionType = get_instruction_type(token.value.c_str());
+		Instruction::Type instructionType = Instruction::name_to_type(token.value);
 		Value *args = numArgs > 0 ? new Value[numArgs] : nullptr;
 		int argIdx = 0;
 
