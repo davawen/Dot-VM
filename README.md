@@ -10,7 +10,7 @@ The parser and interpreter are handwritten in C++.
 
 ### **Syntax**
 Statements are evaluated on a line by line basis. \
-Every line follows this rough scheme :
+Every line follows this rough scheme:
 ```assembly
 [instruction] [argument] ; Comment
 ```
@@ -25,17 +25,17 @@ Or with no arguments :
 
 
 ### **Arguments**
-An argument can either be :
+An argument can either be:
 -	A 64 bit signed integer \
 	Please note : **Expressions are not supported ! Inserting one will cause a syntax error !**
--	A string
+-	A string, which will be represented by a pointer
 -	A register
 
-Arguments are passed to instructions through the syntax seen above, but lots of instructions are overloaded to get they're arguments from the stack. \
+Arguments are passed to instructions through the syntax seen above, but lots of instructions are overloaded to get their arguments from the stack. \
 In that case, arguments are popped from the stack in order left to right.
 
 ### **Numbers**
-Numbers are interpreted using the `strtoll` C function, meaning they can use the following prefixes :
+Numbers are interpreted using the `strtoll` C function, meaning they can use the following prefixes:
 -	Numbers starting by `0` are base-8 :
 	`02375` &#8594; `1277`
 -	Numbers starting by `0x` or `0X` are base-16 :
@@ -44,17 +44,18 @@ Numbers are interpreted using the `strtoll` C function, meaning they can use the
 
 ### **Strings**
 Strings are any character wrapped in double quotation marks. \
-They support escape sequences in the form of : `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\"`, `\?` and `\\`.
+They support escape sequences in the form of : `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\"`, `\?` and `\\`, and they are NULL terminated.
 
 ### **Registers**
-Registers are 64 bit wide variables for storing data, there are currently 4 :
+Registers are 64 bit wide variables for storing data, there are currently 5:
 ```assembly
 reg  ; General purpose register
 eax  ; Arithmetic register
-sp   ;  Top of the stack
-void ; Empty register
+sp   ; Pointer to top of the stack
+mem  ; Pointer to start of memory block
+void ; Blackhole register
 ``` 
-Values of registers are acessed through the dollar `$` operator :
+Values of registers are acessed through the dollar `$` operator:
 ```assembly
 reg  ; Pointer to 'reg'
 $reg ; Value of 'reg'
@@ -76,8 +77,8 @@ More will be explained in the **Functions** header.
 
 ### **Instructions**
 
-The language is (currently) composed of these 20 instructions :
--	Stack manipulation : `push` and `pop`
+The language is (currently) composed of these 21 instructions :
+-	Stack manipulation : `push`, `pop` and `swap`
 	```assembly
 	push [value...]
 	; Pushes a/multiple value to the stack
@@ -95,6 +96,18 @@ The language is (currently) composed of these 20 instructions :
 		            ; This means `pop` is equivalent to `pop void, 0`
 		
 		pop reg ; Removes the top of the stack and stores it in register 'reg'
+	
+	swap
+	swap [value]
+	; Swaps the top of the stack with the given index
+
+		swap 2
+		;        ╭─────┐ 
+		; [5, 8, 9, 3, 4] <- Top
+		;        └─────╯
+
+		swap
+		; No value means swapping the two top elements on the stack, or the equivalent of `swap 1`
 	```
 -	Arithmethic instructions : `add`, `sub`, `mul`, `div` and `mod`
 	```assembly
@@ -168,10 +181,15 @@ The language is (currently) composed of these 20 instructions :
 	```assembly
 	mov [register], [value]
 	; Moves a value to a register
-    
 		mov reg, $eax ; Moves the value of 'eax' to 'reg'
+
 		mov sp, 20    ; Changes the value of the top of the stack to 20
 		; Equivalent to : `pop` and `push 20`
+
+		push $mem, 16
+		add
+		mov $sp, "String" 
+		; Moves a pointe to a string to the second index of memory
 	```
 -	Runtime manipulation : `:`, `jump`, `ifeq` and `call`
 	```assembly
@@ -261,8 +279,108 @@ Here is an exemple function :
 	print "The value is :", $sp, "\n" ; This should print '87'
 	
 ```
+As the `$$` label represents returning, jumping to it from the main program will thus exit the program.
 
-The `$$` label is defined as a stack, so functions can call themselves or other functions.
-
-As the `$$` label represents returning, jumping to it from the main program will thus exit the program. \
 Note: Traditionally, the exit code is set with `reg` and exit is handled automatically by the compiler, however this can be disabled through a flag and done manually through a syscall.
+
+## The Preprocessor
+The preprocessor is the first thing that will interact with the code after reading.
+
+It allows for abstraction through the use of macros. \
+It is interacted with through these preprocessor directives:
+
+### **Built-in directives**
+-	`#include` directive, will insert the given files body, relative to the path of the current file. \
+	The `#include` directive won't include the same file multiple times, however this can be circumvented using the `#include_recursive` directive.
+	```asm
+	#include "FILE"
+	#include_recursive "FILE"
+	```
+-	`#define` directive, will define the given single-line macro, and every subsequent use of the macro will replace it with its contents.
+	```asm
+	#define MACRO VALUE
+	```
+-	`#macro` directive, will define the given multi-line macro.
+	```asm
+	#macro MACRO
+		; BODY
+	#endmacro
+	```
+-	`#ifdef`/`ifndef` directive, will only insert its body if the given macro is defined / not defined
+	```asm
+	#ifdef MACRO
+		; BODY
+	#endif
+	```
+-	`#ifis` and `#elif`/`#ifnis` and `#elnif` directives, will only insert their body if the macro exists and is equal to the given value. \
+	Note this only works with single line macros.
+	```asm
+	#ifis MACRO VALUE
+		; BODY
+	#elif MACRO VALUE
+		; BODY
+	#endif
+	```
+-	`#undef` directive, removes the definition of a macro.
+	```asm
+	#undef MACRO
+	```
+-	`#error` directive, throws a compilation error with the given message.
+	```asm
+	#error "MESSAGE"
+	```
+
+### **Macros**
+Macros are designed to streamline programming in dotvm, they acts as functions without requiring the use of the callstack, though they come at the cost of additional size. \
+As seen before, they are defined using the `#define` and the `#macro` directive.
+
+Built-in macros:
+-	`__FILE__`: Name of the current file
+-	Only defined in macros:
+	-	`__NUM_ARGS__`: Number of arguments given
+	-	`ARG_n`: Argument with index n, where n is a number between 0 and `__MAX_MACRO_ARGS__`
+	-	`__MAX_MACRO_ARGS__`: Maximum number of arguments which can be given to a macro.
+		Default is 16, but can be adjusted through a compiler flag.
+	-	`__MACRO_INDEX__`: Unique index given to a macro.
+	-	`__MACRO_ID__`: Unique identifier given to each expansion of a macro. \
+		This means that between two expansions of the same macro, `__MACRO_INDEX__` will be equal but not `__MACRO_ID__`.
+
+Macros can be expanded implicitely, if they are on their own, or explicitely, if you need to compose things together. \
+It that case, `#()` will be used :
+```asm
+#define define_label : label#(ARG_1) ; (value)
+; labelARG_1 would be considered a single word and wouldn't work
+
+define_label 1
+; Gets expanded to:
+: label1
+```
+
+Multi-line macro definition:
+```asm
+#macro jifeq ; (label, word, val1, val2)
+	#ifnis __NUM_ARGS__ 4
+		#error "Wrong number of arguments given to jifeq"
+	#endif
+	
+	ifeq ARG_2, ARG_3, ARG_4
+	jump ARG_1
+#endmacro
+
+jifeq somelabel, eq, $reg, 0
+
+; Gets expanded to: 
+; (trailing spaces are removed)
+#ifnis 4 4
+#error "Wrong number of arguments given to jifeq"
+#endif
+
+ifeq eq, $reg, 0
+jump somelabel
+
+; Further directives are processed:
+ifeq eq, $reg, 0
+jump somelabel
+```
+
+
