@@ -54,7 +54,7 @@ eax  ; Arithmetic register
 sp   ; Pointer to top of the stack
 mem  ; Pointer to start of memory block
 void ; Blackhole register
-``` 
+```
 Values of registers are acessed through the dollar `$` operator:
 ```assembly
 reg  ; Pointer to 'reg'
@@ -75,9 +75,12 @@ jump label
 There is one reserved label, `$$` which denotes the last place a `call` instruction was invoked, and one obligatory label, `.start`, which is where the interpreter starts running the program. \
 More will be explained in the **Functions** header.
 
+Label names can only contain letters, numbers, underscores and hyphens, dots, and @, so they must conform to this regex:
+`/[a-zA-Z0-9_\-.@]+/`
+
 ### **Instructions**
 
-The language is (currently) composed of these 21 instructions :
+The language is (currently) composed of these 22 instructions :
 -	Stack manipulation : `push`, `pop` and `swap`
 	```assembly
 	push [value...]
@@ -85,27 +88,24 @@ The language is (currently) composed of these 21 instructions :
     
 		push 1968, 12 ; Pushes 1968 to the stack, then pushes 12
 		push $reg     ; Pushes the value of register 'reg' to the stack
-  
+    
 	pop
 	pop [register]
-	pop [register], [offset]
 	; Removes a value from the stack at a given offset and optionally store it somewhere
-
-		pop         ; Removes the top of the stack
-		pop void, 2 ; Removes the third element from the stack
-		            ; This means `pop` is equivalent to `pop void, 0`
+	
+		pop     ; Removes the top of the stack
 		
 		pop reg ; Removes the top of the stack and stores it in register 'reg'
 	
 	swap
 	swap [value]
 	; Swaps the top of the stack with the given index
-
+	
 		swap 2
 		;        ╭─────┐ 
 		; [5, 8, 9, 3, 4] <- Top
 		;        └─────╯
-
+	
 		swap
 		; No value means swapping the two top elements on the stack, or the equivalent of `swap 1`
 	```
@@ -122,7 +122,7 @@ The language is (currently) composed of these 21 instructions :
 	sub [value 1], [value 2]
 	; Substracts the first value by the second value, and pushes the result to the stack
 	; Works in the same way as the 'add' instruction
-
+	
 	mul
 	mul [value 1], [value 2]
 	; Multiplies two values together, and pushes the result to the stack
@@ -137,14 +137,16 @@ The language is (currently) composed of these 21 instructions :
 	mod [value 1], [value 2]
 	; Divides the first value by the second value, and pushes the remainder to the stack
 	; Works in the same way as the `div` instruction
-
+	
 	```
+	
+	
 -	Bitwise instructions : `and`, `or`, `xor`, `not`, `lshift`, `rshift`
 	```assembly
 	and
 	and [value 1], [value 2]
 	; ANDS two values together, and pushes the result to the stack
-
+	
 		and      ; Pops the first and second value from the stack, and ANDs them
 		and 7, 4 ; Pushes 4 to the stack
 	
@@ -152,23 +154,23 @@ The language is (currently) composed of these 21 instructions :
 	or [value 1], [value 2]
 	; ORs two values together, and pushes the result to the stack
 	; Works in the same way as the 'and' instruction
-
+	
 	xor
 	xor [value 1], [value 2]
 	; XORs two values together, and pushes the result to the stack
 	; Works in the same way as the 'xor' instruction
-
+	
 	not
 	not [value]
 	; Flips the bits of a value, and pushes the result to the stack
-
+	
 		not      ; Pops the top of the stack, flips it and pushes it back
 		not $eax ; Flips the bits of 'eax'
 	
 	lshift [value]
 	lshift [value 1], [value 2]
 	; Shifts the bit of a value to the left by the given amount, and pushes the result to the stack
-
+	
 		lshift 2     ; Pops the top of the stack, left shifts it by two and pushes it back
 		lshift 12, 3 ; Pushes 96 to the stack
 	
@@ -182,10 +184,10 @@ The language is (currently) composed of these 21 instructions :
 	mov [register], [value]
 	; Moves a value to a register
 		mov reg, $eax ; Moves the value of 'eax' to 'reg'
-
+	
 		mov sp, 20    ; Changes the value of the top of the stack to 20
 		; Equivalent to : `pop` and `push 20`
-
+	
 		push $mem, 16
 		add
 		mov $sp, "String" 
@@ -201,18 +203,18 @@ The language is (currently) composed of these 21 instructions :
 	jump [label]
 	; Jumps to a label
 	; Throws an error if the label doesn't exists
-
+	
 		jump label ; Jumps to the label 'label'
 	
 	ifeq [operator]
 	ifeq [operator], [value], [value]
 	; Compares two values together based on the given operator
 	; Skips the next instruction if the condition is false
-
+	
 		ifeq le, $eax, 10
 		; Will only execute the next instruction if the value of 'eax'
 		; is less or equal to 10
-
+	
 		; Valid comparisons are 'eq','lt','le','gt','ge','ne'
 		; Which translates to : 
 		; 'equal', 'less than', 'less or equal',
@@ -220,18 +222,18 @@ The language is (currently) composed of these 21 instructions :
 		
 		ifeq eq
 		; Pops two values from the stack and only execute the next instruction if they are equal
-
+	
 	call [label]
 	; Jumps to a label and sets the '$$' label to the next instruction
 	; Call is functionally equivalent to 'jump', but it is used to invoke functions
 	; More is explained in the **Functions** header
-
+	
 		call func
 		push 10
 		; Jumps to label func, and set label $$ to the next instruction
 		; In this case, a push instruction
 	```
--	Other : `print`, `syscall`
+-	Other : `print`, `syscall` and `nop`
 	```assembly
 	print [(string | value)...]
 	; Will print the given characters to stdout
@@ -247,6 +249,12 @@ The language is (currently) composed of these 21 instructions :
 		; This exits the program manually
 		push 0
 		syscall 1, 60
+	
+	nop
+	; Not an operation, acts as a placeholder or pass through statement
+		
+		ifeq eq, 1, 1
+		nop
 	```
 
 ### **Functions**
@@ -296,43 +304,69 @@ It is interacted with through these preprocessor directives:
 	#include "FILE"
 	#include_recursive "FILE"
 	```
+	
 -	`#define` directive, will define the given single-line macro, and every subsequent use of the macro will replace it with its contents.
+	
 	```asm
 	#define MACRO VALUE
 	```
--	`#macro` directive, will define the given multi-line macro.
-	```asm
-	#macro MACRO
-		; BODY
-	#endmacro
-	```
--	`#ifdef`/`ifndef` directive, will only insert its body if the given macro is defined / not defined
-	```asm
-	#ifdef MACRO
-		; BODY
-	#endif
-	```
--	`#ifis` and `#elif`/`#ifnis` and `#elnif` directives, will only insert their body if the macro exists and is equal to the given value. \
-	Note this only works with single line macros.
-	```asm
-	#ifis MACRO VALUE
-		; BODY
-	#elif MACRO VALUE
-		; BODY
-	#endif
-	```
--	`#undef` directive, removes the definition of a macro.
-	```asm
-	#undef MACRO
-	```
--	`#error` directive, throws a compilation error with the given message.
-	```asm
-	#error "MESSAGE"
-	```
+	
+- `#macro` directive, will define the given multi-line macro.
+
+  ```asm
+  #macro MACRO
+  	; BODY
+  #endmacro
+  ```
+
+-	`macrogroup` directive, will define the given macro group.
+
+  ```asm
+  #define MACRO_1 ...
+  #define MACRO_2 ...
+  
+  #macrogroup
+  	; use MACRO_1 and MACRO_2
+  #endmacrogroup
+  ```
+
+- `#ifdef`/`ifndef` directive, will only insert its body if the given macro is defined / not defined
+
+  ```asm
+  #ifdef MACRO
+  	; BODY
+  #endif
+  ```
+
+- `#ifis` and `#elif`/`#ifnis` and `#elnif` directives, will only insert their body if the macro exists and is equal to the given value. \
+  Note this only works with single line macros.
+
+  ```asm
+  #ifis MACRO VALUE
+  	; BODY
+  #elif MACRO VALUE
+  	; BODY
+  #endif
+  ```
+
+- `#undef` directive, removes the definition of a macro.
+
+  ```asm
+  #undef MACRO
+  ```
+
+- `#error` directive, throws a compilation error with the given message.
+
+  ```asm
+  #error "MESSAGE"
+  ```
 
 ### **Macros**
 Macros are designed to streamline programming in dotvm, they acts as functions without requiring the use of the callstack, though they come at the cost of additional size. \
 As seen before, they are defined using the `#define` and the `#macro` directive.
+
+Macros must satisfy the same naming requirement as labels, only letters, numbers, underscores and hyphens, dots, and @:
+`/[a-zA-Z0-9_\-.@]+/`.
 
 Built-in macros:
 -	`__FILE__`: Name of the current file
@@ -344,9 +378,13 @@ Built-in macros:
 	-	`__MACRO_INDEX__`: Unique index given to a macro.
 	-	`__MACRO_ID__`: Unique identifier given to each expansion of a macro. \
 		This means that between two expansions of the same macro, `__MACRO_INDEX__` will be equal but not `__MACRO_ID__`.
+-	Only defined in macro groups:
+	-	`__GROUP_INDEX__`: Unique index given to macro group.
+	-	`__GROUP_ID__`: Unique identifier given to a macro group.
 
 Macros can be expanded implicitely, if they are on their own, or explicitely, if you need to compose things together. \
 It that case, `#()` will be used :
+
 ```asm
 #define define_label : label#(ARG_1) ; (value)
 ; labelARG_1 would be considered a single word and wouldn't work
@@ -383,4 +421,48 @@ ifeq eq, $reg, 0
 jump somelabel
 ```
 
+### **Macro Groups**
 
+You will sometimes need to 'link' two or more macros together, such as when making blocks, for example.
+
+If that's the case, you will have to use a macro group. \
+As seen before, a macro group is started with the `#macrogroup` directive, and ended with the `#endmacrogroup` directive.
+
+Inside of a macro group, two special macros, `__GROUP_INDEX__` and `__GROUP_ID__` will be defined.
+They are special as they are processed after all of regular macros are expanded.
+
+When they are nested, the deepest one always take precedence:
+```asm
+; #(__GROUP_INDEX__) is 0, this is the global macro group
+
+#macrogroup
+	; #(__GROUP_INDEX__) is 1
+
+	#macrogroup
+		; #(__GROUP_INDEX__) is 2
+	#endmacrogroup
+
+	; #(__GROUP_INDEX__) is 1
+#endmacrogroup
+```
+
+As macrogroups are processed after regular macros, they can be included in macros, without additional effort to the user:
+```asm
+#macro ifblock ; (word, val1, val2)
+	#macrogroup
+	
+	ifeq ARG_1, ARG_2, ARG_3
+	jump #(__GROUP_ID__)true
+	
+	jump #(__GROUP_ID__)false
+	
+	: #(__GROUP_ID__)true
+#endmacro
+
+#macro ifblockend
+	: #(__GROUP_ID__)false
+
+	#endmacrogroup
+#endmacro
+```
+The macros will first be expanded, then the groups will be parsed out.
