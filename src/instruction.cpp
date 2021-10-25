@@ -17,8 +17,7 @@ Instruction::Type Instruction::name_to_type(const char *name)
 	{
 		{ hash("push"), Instruction::Type::PUSH },
 		{ hash("pop"),  Instruction::Type::POP },
-		{ hash("push"), Instruction::Type::PUSH },
-		{ hash("pop"),  Instruction::Type::POP },
+		{ hash("swap"), Instruction::Type::SWAP },
 		{ hash("add"),  Instruction::Type::ADD },
 		{ hash("sub"),  Instruction::Type::SUB },
 		{ hash("mul"),  Instruction::Type::MUL },
@@ -36,7 +35,8 @@ Instruction::Type Instruction::name_to_type(const char *name)
 		{ hash("ifeq"), Instruction::Type::IFEQ },
 		{ hash("call"), Instruction::Type::CALL },
 		{ hash("print"), Instruction::Type::PRINT },
-		{ hash("syscall"), Instruction::Type::SYSCALL }
+		{ hash("syscall"), Instruction::Type::SYSCALL },
+		{ hash("nop"), Instruction::Type::NOP }
 	};
 	
 	intptr_t currentHash = hash(name);
@@ -57,8 +57,7 @@ const char *Instruction::type_to_name(Instruction::Type type)
 	{
 		{ Instruction::Type::PUSH, "push" },
 		{ Instruction::Type::POP, "pop" },
-		{ Instruction::Type::PUSH, "push" },
-		{ Instruction::Type::POP, "pop" },
+		{ Instruction::Type::SWAP, "swap" },
 		{ Instruction::Type::ADD, "add" },
 		{ Instruction::Type::SUB, "sub" },
 		{ Instruction::Type::MUL, "mul" },
@@ -77,6 +76,7 @@ const char *Instruction::type_to_name(Instruction::Type type)
 		{ Instruction::Type::CALL, "call" },
 		{ Instruction::Type::PRINT, "print" },
 		{ Instruction::Type::SYSCALL, "syscall" },
+		{ Instruction::Type::NOP, "nop" }
 	};
 
 	if(hashTable.find(type) == hashTable.end())

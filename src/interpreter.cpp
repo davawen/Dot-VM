@@ -2,8 +2,13 @@
 
 void interpret(std::vector<Statement> &statements)
 {
-	std::stack<intptr_t> stack;
-	intptr_t *sp = &stack.top();
+	// NOTE: Using an std::vector instead of a std::stack to allow internal acess to elements
+	std::vector<intptr_t> stack;
+	stack.reserve(4096);
+	stack.push_back(0); // Avoid undefined behaviour
+
+	// NOTE: Stack pointer may jump around memory as stack reallocates. This is unavoidable, but really not great.
+	intptr_t *sp = &stack.back();
 	
 	intptr_t valReg = 0, valEax = 0, valVoid = 0;
 	
@@ -59,17 +64,17 @@ void interpret(std::vector<Statement> &statements)
 			runtime_error("No element in stack!");
 		}
 		
-		intptr_t value = stack.top();
-		stack.pop();
-		sp--;
+		intptr_t value = stack.back();
+		stack.pop_back();
+		sp = &stack.back();
 
 		return value;
 	};
 	
 	auto push_stack = [&](intptr_t val)
 	{
-		stack.push(val);
-		sp++;
+		stack.push_back(val);
+		sp = &stack.back();
 	};
 
 	auto handle_arithmetic_instruction = [&](const Statement &stm, intptr_t (*op)(intptr_t, intptr_t))
@@ -93,21 +98,16 @@ void interpret(std::vector<Statement> &statements)
 	{
 		// shift [amount]
 		// shift [value], [amount]
-		//
-		intptr_t amount = get_value_if_register( stm.args[stm.numArgs == 2] );
+		intptr_t amount = get_value_if_register( stm.args[stm.numArgs == 2] ); // NOTE: Smarty pants way of saying "get second argument if there is two, else get first argument"
 		
 		if(stm.numArgs == 1)
 		{
-			push_stack( pop_stack() << amount );
+			push_stack( op( pop_stack(), amount ) );
 		}
 		else
 		{
-			if(stm.args[0].is_register())
-				push_stack( op( get_register_value(stm.args[0]), amount ) );
-			else
-				push_stack( op( stm.args[0].val, amount ) );
+			push_stack( op( get_value_if_register(stm.args[0]), amount ) );
 		}
-
 	};
 
 	auto iterator = statements.begin();
@@ -125,7 +125,7 @@ void interpret(std::vector<Statement> &statements)
 	}
 	
 	std::stack<std::vector<Statement>::iterator> callstack;
-	callstack.push(statements.end());
+	callstack.push(statements.end() - 1);
 
 	for(; iterator != statements.end(); iterator++)
 	{
@@ -143,13 +143,33 @@ void interpret(std::vector<Statement> &statements)
 				}
 				break;
 			case Instruction::Type::POP:
-				// TODO: Implement offset
 				if(stm.numArgs == 1)
 				{
 					*reinterpret_cast<intptr_t *>(get_register_value(stm.args[0])) = pop_stack();
 				}
 				else pop_stack();
 				break;
+			case Instruction::Type::SWAP:
+			{
+				intptr_t val;
+				if(stm.numArgs == 1)
+				{
+					val = get_value_if_register(stm.args[0]);
+				}
+				else val = 1;
+
+				if(val < 1 || val >= stack.size())
+				{
+					runtime_error("Invalid swap amount: %" PRIdPTR ", stack size is %lu", val, stack.size());
+				}
+				
+				intptr_t tmp = stack.back();
+				auto elementPos = stack.rbegin() + val; // Reverse iterator, so rbegin is the end of the vector
+
+				stack.back() = *elementPos;
+				*elementPos = tmp;
+				break;
+			}
 			case Instruction::Type::ADD:
 				handle_arithmetic_instruction(stm, [](auto left, auto right){ return left + right; });
 				break;
@@ -364,8 +384,11 @@ void interpret(std::vector<Statement> &statements)
 					default:
 						runtime_error("Too much arguments used with syscall (% " PRIdPTR ", maximum is 4)", syscallArgs);
 				}
-			default:
+			case Instruction::Type::NOP:
 				break;
 		}
 	}
+	
+	printf("\n[PROGRAM EXITED WITH CODE %" PRIu8 "]\n", static_cast<uint8_t>(valReg));
+
 }

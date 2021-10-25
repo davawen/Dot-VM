@@ -9,13 +9,13 @@ struct Instruction
 {
 	enum struct Type
 	{
-		PUSH, POP,
+		PUSH, POP, SWAP,
 		ADD, SUB, MUL, DIV, MOD,
 		AND, OR, XOR, NOT,
 		LSHIFT, RSHIFT,
 		MOV,
 		LABEL, JUMP, IFEQ, CALL,
-		PRINT, SYSCALL // Will probably get replaced by some sort of sys_call
+		PRINT, SYSCALL, NOP
 	};
 	
 	Type type;
