@@ -212,7 +212,7 @@ void interpret(std::vector<Statement> &statements)
 				handle_shift_instruction(stm, [](auto left, auto right){ return left >> right; });
 				break;
 			case Instruction::Type::MOV:
-				*reinterpret_cast<intptr_t *>(get_register_value(stm.args[0])) = get_value_if_register(stm.args[1]);
+				*reinterpret_cast<intptr_t *>(get_value_if_register(stm.args[0])) = get_value_if_register(stm.args[1]);
 
 				break;
 			case Instruction::Type::LABEL: // Pass through
@@ -317,7 +317,7 @@ void interpret(std::vector<Statement> &statements)
 					switch(stm.args[i].type)
 					{
 						case Value::Type::STRING:
-							printf("%s", handle_escape_sequences(*reinterpret_cast<std::string *>(stm.args[i].val)).c_str());	
+							printf("%s", handle_escape_sequences(reinterpret_cast<char *>(stm.args[i].val)));	
 							break;
 						case Value::Type::REG:
 							printf("%p", reinterpret_cast<void *>(get_register_value(stm.args[i])));

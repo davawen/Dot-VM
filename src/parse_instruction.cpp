@@ -1,14 +1,14 @@
 #include "parse_instruction.hpp"
 #include "instruction.hpp"
 
-std::string &handle_escape_sequences(std::string &str)
+char *handle_escape_sequences(char *str)
 {	
 	// March along the string and escape escape sequences along the way
 	// 'ptr' skips escape sequences, which are overwritten using 'idx'
 	
 	size_t index = 0;
 	size_t offset = 0;
-	for(; index < str.length(); index++)
+	for(; str[index] != '\0'; index++)
 	{
 		char chr = str[index];
 
@@ -16,7 +16,7 @@ std::string &handle_escape_sequences(std::string &str)
 		{
 			chr = str[++index];
 
-			if(index >= str.length()) compile_error(0, 0, "Unterminated escape sequence");
+			if(chr == '\0') compile_error(0, 0, "Unterminated escape sequence"); // TODO: Figure out how to pass line / char number appropriately
 			
 			switch(chr)
 			{
@@ -62,7 +62,7 @@ std::string &handle_escape_sequences(std::string &str)
 
 		str[index - offset] = chr;
 	}
-	str.resize(index - offset);
+	str[index - offset + 1] = '\0';
 
 	return str;
 }	
@@ -289,7 +289,11 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Statement> &stat
 					break;
 				case Token::STRING:
 				{
-					std::string *str = new std::string(curToken.value);
+					char *str = new char[curToken.value.size() + 1];
+
+					const char *curStr = curToken.value.c_str();
+					strcpy(str, curStr);
+
 					args[argIdx].val = reinterpret_cast<intptr_t>(str);
 					args[argIdx].type = Value::STRING;
 					

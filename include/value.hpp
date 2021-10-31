@@ -25,8 +25,7 @@ struct Value
 	
 	~Value()
 	{
-		//if(type == Type::STRING) delete[] reinterpret_cast<char *>(value[i].val);
-		if(type == Type::STRING) delete reinterpret_cast<std::string *>(val);
+		if(type == Type::STRING) delete[] reinterpret_cast<char *>(val);
 	}
 	
 	bool is_register() const

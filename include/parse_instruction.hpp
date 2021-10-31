@@ -14,7 +14,7 @@
 #include "error_handling.hpp"
 
 /// This iterates over a string and escapes the given sequences
-std::string &handle_escape_sequences(std::string &str);
+char *handle_escape_sequences(char *str);
 
 /// Takes a file and tokenizes it.
 ///

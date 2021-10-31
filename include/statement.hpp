@@ -51,7 +51,7 @@ inline std::ostream &operator<<(std::ostream &os, const Statement &statement)
 		{
 			if(statement.args[i].type == Value::Type::STRING)
 			{
-				os << '\"' << *reinterpret_cast<std::string *>(statement.args[i].val) << "\"(Type: ";
+				os << '\"' << reinterpret_cast<char *>(statement.args[i].val) << "\"(Type: ";
 			}
 			else os << statement.args[i].val << "(Type: ";
 

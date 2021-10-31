@@ -1,0 +1,33 @@
+: fibo; (int n) -> int 
+	ifeq le, $sp, 1
+	jump $$
+	
+	sub $sp, 1
+	call fibo
+	
+	swap
+	sub $sp, 2
+	call fibo
+	swap
+	pop
+	add
+	
+	jump $$
+
+: .start
+	mov reg, 0
+
+	: loop
+		push $reg
+		call fibo
+		print $sp, "\n"
+		pop
+
+		add $reg, 1
+		pop reg
+		
+		ifeq le, $reg, 50
+		jump loop
+	
+	mov reg, 0
+	jump $$; exit
