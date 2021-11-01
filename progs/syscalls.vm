@@ -1,10 +1,7 @@
 : .start
-	; Print one char
-	mov reg, "Test string"
+	mov reg, "Test string\n"
 
-	push 11, $reg, 1
+	push 12, $reg, 1
 	syscall 3, 1
 
 	mov reg, 0
-
-	

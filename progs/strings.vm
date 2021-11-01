@@ -1,0 +1,63 @@
+: strlen
+	mov eax, 0
+
+	: strlen_loop
+		mov reg, $sp ; Get adress of string
+		
+		mul $eax, 8 ; Get offset
+		add $reg, $sp ; Add offset to pointer
+
+		pop reg ; Get result
+		pop ; Remove multiplication result
+		
+		mov reg, $reg ; Get char at that pos
+
+		print $reg, " "
+
+		ifeq eq, $reg, 0 ; if reg is null
+		jump strlen_skip_loop
+
+		add $eax, 1
+		pop eax
+		
+		jump strlen_loop
+	
+	: strlen_skip_loop
+	
+	pop
+	push $eax
+	
+	jump $$
+	
+: puts
+	call strlen; Get length of given string
+
+	swap ; Change stack to be (length, string)
+
+	push 1 ; Push stdout
+
+	syscall 3, 1
+
+	; Clean up
+	pop
+	pop
+	pop
+	
+	jump $$
+
+: .start
+	
+	push "Hey!\n"
+	
+	mov reg, $sp
+	
+	print $reg, " "
+	
+	mov reg, $reg
+	print $reg, "\n"
+
+	jump $$
+
+	call puts
+
+	mov reg, 0

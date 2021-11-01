@@ -317,7 +317,7 @@ void interpret(std::vector<Statement> &statements)
 					switch(stm.args[i].type)
 					{
 						case Value::Type::STRING:
-							printf("%s", handle_escape_sequences(reinterpret_cast<char *>(stm.args[i].val)));	
+							printf("%s", reinterpret_cast<char *>(stm.args[i].val));	
 							break;
 						case Value::Type::REG:
 							printf("%p", reinterpret_cast<void *>(get_register_value(stm.args[i])));

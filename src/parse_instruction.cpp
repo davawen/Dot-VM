@@ -62,7 +62,7 @@ char *handle_escape_sequences(char *str)
 
 		str[index - offset] = chr;
 	}
-	str[index - offset + 1] = '\0';
+	str[index - offset] = '\0';
 
 	return str;
 }	
@@ -293,6 +293,8 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Statement> &stat
 
 					const char *curStr = curToken.value.c_str();
 					strcpy(str, curStr);
+
+					handle_escape_sequences(str);
 
 					args[argIdx].val = reinterpret_cast<intptr_t>(str);
 					args[argIdx].type = Value::STRING;
