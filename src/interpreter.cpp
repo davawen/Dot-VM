@@ -141,7 +141,7 @@ void interpret(std::vector<Statement> &statements)
 	// Search for start label
 	for(; iterator != statements.end(); iterator++)
 	{
-		if(iterator->ins.type == Instruction::Type::LABEL && iterator->args[0].val == hash(".start"))
+		if(iterator->ins.type == Instruction::Type::LABEL && iterator->args[0].val == hash("main"))
 			break;
 	}
 

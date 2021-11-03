@@ -1,4 +1,4 @@
-: .start
+: main
 	mov reg, "Test string\n"
 
 	push 12, $reg, 1

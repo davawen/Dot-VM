@@ -10,7 +10,7 @@
 	
 	jump ret
 
-: .start
+: main
 	
 	print "[Stack manipulation]\n"
 	

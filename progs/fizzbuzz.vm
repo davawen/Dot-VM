@@ -1,4 +1,4 @@
-: .start
+: main
 	mov reg, 0
 
 	: loop

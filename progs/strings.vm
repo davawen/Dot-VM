@@ -30,7 +30,7 @@
 	
 	jump ret
 
-: .start
+: main
 	
 	push "Hello some long string I don't know the size of!\n"
 
