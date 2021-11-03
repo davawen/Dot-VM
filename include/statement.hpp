@@ -9,7 +9,7 @@ struct Statement
 {
 	Instruction ins;
 	Value *args;
-	int numArgs;
+	size_t numArgs;
 	
 	Statement(Instruction ins, Value *value = nullptr, int numValues = 0)
 	{
@@ -47,7 +47,7 @@ inline std::ostream &operator<<(std::ostream &os, const Statement &statement)
 	if(statement.args != nullptr)
 	{
 		os << ", Value: ";
-		for(int i = 0; i < statement.numArgs; i++)
+		for(size_t i = 0; i < statement.numArgs; i++)
 		{
 			if(statement.args[i].type == Value::Type::STRING)
 			{

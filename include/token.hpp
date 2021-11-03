@@ -8,6 +8,7 @@ struct Token
 	{
 		INSTRUCTION, // Pretty straigth forward
 		LITERAL, // Registers, Labels
+		OPERATOR,
 		NUMBER, 
 		STRING,
 		NEWLINE // End of current instruction

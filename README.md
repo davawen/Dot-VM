@@ -50,15 +50,16 @@ They support escape sequences in the form of : `\a`, `\b`, `\f`, `\n`, `\r`, `\t
 Registers are 64 bit wide variables for storing data, there are currently 5:
 ```assembly
 reg  ; General purpose register
-eax  ; Arithmetic register
+rax  ; Arithmetic register
+rcx  ; Counting register
 sp   ; Pointer to top of the stack
 mem  ; Pointer to start of memory block
-void ; Blackhole register
 ```
-Values of registers are acessed through the dollar `$` operator:
+Values of registers are acessed through the dollar `$` dereference operator:
 ```assembly
-reg  ; Pointer to 'reg'
-$reg ; Value of 'reg'
+reg   ; Pointer to 'reg'
+$reg  ; Value of 'reg'
+$$reg ; etc...
 ```
 
 ### **Labels**
@@ -72,7 +73,7 @@ They are defined with the colon instruction and jumped to with the jump instruct
 jump label
 ; Jumps to the label 'label'
 ```
-There is one reserved label, `$$` which denotes the last place a `call` instruction was invoked, and one obligatory label, `.start`, which is where the interpreter starts running the program. \
+There is one reserved label, `ret` which denotes the last place a `call` instruction was invoked, and one obligatory label, `main`, which is where the interpreter starts running the program. \
 More will be explained in the **Functions** header.
 
 Label names can only contain letters, numbers, underscores and hyphens, dots, and @, so they must conform to this regex:
@@ -80,7 +81,7 @@ Label names can only contain letters, numbers, underscores and hyphens, dots, an
 
 ### **Instructions**
 
-The language is (currently) composed of these 22 instructions :
+The language is composed of these instructions :
 -	Stack manipulation : `push`, `pop` and `swap`
 	```assembly
 	push [value...]
@@ -116,7 +117,7 @@ The language is (currently) composed of these 22 instructions :
 	; Adds two values together, and pushes the result to the stack
     
 		add            ; Pops the first and second values from the stack and adds them together
-		add $reg, $eax ; Adds the value from 'reg' and 'eax'
+		add $reg, $rax ; Adds the value from 'reg' and 'rax'
 	
 	sub
 	sub [value 1], [value 2]
@@ -165,7 +166,7 @@ The language is (currently) composed of these 22 instructions :
 	; Flips the bits of a value, and pushes the result to the stack
 	
 		not      ; Pops the top of the stack, flips it and pushes it back
-		not $eax ; Flips the bits of 'eax'
+		not $rax ; Flips the bits of 'rax'
 	
 	lshift [value]
 	lshift [value 1], [value 2]
@@ -179,11 +180,11 @@ The language is (currently) composed of these 22 instructions :
 	; Shifts the bit of a value to the right by the given amount, and pushes the result to the stack
 	; Works in the same way as the 'lshift' instruction
 	```
--	Register manipulation : `mov`
+-	Memory manipulation : `mov`, `movn`
 	```assembly
 	mov [register], [value]
 	; Moves a value to a register
-		mov reg, $eax ; Moves the value of 'eax' to 'reg'
+		mov reg, $rax ; Moves the value of 'rax' to 'reg'
 	
 		mov sp, 20    ; Changes the value of the top of the stack to 20
 		; Equivalent to : `pop` and `push 20`
@@ -192,6 +193,18 @@ The language is (currently) composed of these 22 instructions :
 		add
 		mov $sp, "String" 
 		; Moves a pointe to a string to the second index of memory
+	
+	movn [amount], [register], [value]
+	; Moves the specified amount of bytes of a value into a register
+	; Please note: *this strictly moves the value*
+	; Thus, passing a memory address to it will only copy the address, not what is in it.
+		movn 2, reg, $rax ; Write only the first two bytes of rax (rightmost or leftmost depending on endianess) into rax
+		
+		push "Some string\n"
+		add $sp, 5
+		movn 1, reg, $$sp ; Moves 's' character to reg
+
+
 	```
 -	Runtime manipulation : `:`, `jump`, `ifeq` and `call`
 	```assembly
@@ -211,8 +224,8 @@ The language is (currently) composed of these 22 instructions :
 	; Compares two values together based on the given operator
 	; Skips the next instruction if the condition is false
 	
-		ifeq le, $eax, 10
-		; Will only execute the next instruction if the value of 'eax'
+		ifeq le, $rax, 10
+		; Will only execute the next instruction if the value of 'rax'
 		; is less or equal to 10
 	
 		; Valid comparisons are 'eq','lt','le','gt','ge','ne'
@@ -224,13 +237,13 @@ The language is (currently) composed of these 22 instructions :
 		; Pops two values from the stack and only execute the next instruction if they are equal
 	
 	call [label]
-	; Jumps to a label and sets the '$$' label to the next instruction
+	; Jumps to a label and sets the 'ret' label to the next instruction
 	; Call is functionally equivalent to 'jump', but it is used to invoke functions
 	; More is explained in the **Functions** header
 	
 		call func
 		push 10
-		; Jumps to label func, and set label $$ to the next instruction
+		; Jumps to label func, and set label ret to the next instruction
 		; In this case, a push instruction
 	```
 -	Other : `print`, `syscall` and `nop`
@@ -239,7 +252,7 @@ The language is (currently) composed of these 22 instructions :
 	; Will print the given characters to stdout
 	
 		print "Hello, world!\n" ; Prints "Hello, World!" and a line feed
-		print "The value of eax is ", $eax, "\n" ; Concatenation of values
+		print "The value of rax is ", $rax, "\n" ; Concatenation of values
 	
 	syscall
 	syscall [number of args], [syscall id]
@@ -259,7 +272,7 @@ The language is (currently) composed of these 22 instructions :
 
 ### **Functions**
 Functions are defined at the start of the program as labels. \
-They return by a jump to `$$`, and are called with the `call` instruction.
+They return by a jump to `ret`, and are called with the `call` instruction.
 
 Arguments are traditionally passed through the stack.
 
@@ -276,18 +289,18 @@ Here is an exemple function :
 	add
 	
 	; Jump back to the call statement
-	jump $$
+	jumpret 
 
-: .start ; Program starts here
+: main ; Program starts here
 	push 12, 60, 0xF
 	
 	call funcThreeAdd ; Jumps to function
-	; $$ now points here
+	; ret now points here
 	
 	print "The value is :", $sp, "\n" ; This should print '87'
 	
 ```
-As the `$$` label represents returning, jumping to it from the main program will thus exit the program.
+As the `ret` label represents returning, jumping to it from the main program will thus exit the program.
 
 Note: Traditionally, the exit code is set with `reg` and exit is handled automatically by the compiler, however this can be disabled through a flag and done manually through a syscall.
 

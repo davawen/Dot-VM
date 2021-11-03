@@ -13,7 +13,7 @@ struct Instruction
 		ADD, SUB, MUL, DIV, MOD,
 		AND, OR, XOR, NOT,
 		LSHIFT, RSHIFT,
-		MOV,
+		MOV, MOVN,
 		LABEL, JUMP, IFEQ, CALL,
 		PRINT, SYSCALL, NOP
 	};

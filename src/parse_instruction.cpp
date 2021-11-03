@@ -189,6 +189,14 @@ void tokenize(const char *filename, std::vector<Token> &tokens)
 		{
 			Token::Type tokenType;
 			
+			while(part[0] == '$')
+			{
+				tokens.push_back( Token( Token::OPERATOR, "$", line, pos ) );
+
+				part++;
+				pos++;
+			}
+
 			// DONE: Move escape sequences somewhere else to make this work
 			if(part[0] == '\"') // overwrite quotation marks if it's a string
 			{
@@ -302,6 +310,12 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Statement> &stat
 					argIdx++;
 					break;
 				}
+				case Token::OPERATOR:
+					args[argIdx].val = 0; // TODO: Operator enum
+					args[argIdx].type = Value::OPERATOR;
+
+					argIdx++;
+					break;
 				case Token::LITERAL:
 					if(instructionType == Instruction::Type::LABEL || instructionType == Instruction::Type::JUMP || instructionType == Instruction::Type::CALL || (instructionType == Instruction::Type::IFEQ && i == 0))
 					{
@@ -313,45 +327,27 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Statement> &stat
 					}
 					else
 					{
-						bool isRegisterValue = false;
-
-						// TODO: Recursive dereference
-						if(curToken.value[0] == '$')
-						{
-							isRegisterValue = true;
-
-							// Shift by one to the left (remove dollar)
-							// Probably not the best way to do it
-							curToken.value = std::string( curToken.value.c_str() + 1 );
-						}
-
+						// DONE: Recursive dereference
 						switch(hash(curToken.value.c_str()))
 						{
 							case hash("reg"):
 								args[argIdx].val = static_cast<intptr_t>(Register::REG);
 								break;
-							case hash("eax"):
-								args[argIdx].val = static_cast<intptr_t>(Register::EAX);
+							case hash("rax"):
+								args[argIdx].val = static_cast<intptr_t>(Register::RAX);
+								break;
+							case hash("rcx"):
+								args[argIdx].val = static_cast<intptr_t>(Register::RCX);
 								break;
 							case hash("sp"):
 								args[argIdx].val = static_cast<intptr_t>(Register::SP);
-								break;
-							case hash("void"):
-								args[argIdx].val = static_cast<intptr_t>(Register::VOID);
 								break;
 							default:
 								compile_error(curToken.line, curToken.pos, "Uknown register: %s", curToken.value.c_str());
 								break;
 						}
 
-						if(isRegisterValue)
-						{
-							args[argIdx].type = Value::REG_VALUE;
-						}
-						else
-						{
-							args[argIdx].type = Value::REG;
-						}
+						args[argIdx].type = Value::REG;
 
 						argIdx++;
 					}
@@ -361,7 +357,7 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Statement> &stat
 					break;
 			}
 		}
-		
+
 		statements.push_back( Statement( Instruction( instructionType ), args, numArgs )  );
 			
 		idx += numArgs + 1; // args + new line

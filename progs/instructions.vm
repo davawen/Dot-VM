@@ -8,7 +8,7 @@
 	
 	pop
 	
-	jump $$
+	jump ret
 
 : .start
 	
@@ -97,24 +97,29 @@
 	print "\n[mov]\n"
 
 	mov reg, 5    ; reg: 5
-	mov eax, $reg ; reg: 5, eax: 5
-	print "Should print 5 twice: ", $reg, " ", $eax, "\n"
+	mov rax, $reg ; reg: 5, rax: 5
+	print "Should print 5 twice: ", $reg, " ", $rax, "\n"
 	
-	mov reg, eax  ; reg: ptr to eax
+	mov reg, rax  ; reg: ptr to rax
 	mov $reg, 20
-	print "Should print 20: ", $eax, "\n"
+	print "Should print 20: ", $rax, "\n"
+
+	mov rax, 0xAABBCC
+	mov reg, 0
+	movn 2, reg, $rax
+	print "Should print 48076: ", $reg, "\n"
 	
 	print "\n[Runtime]\n"
 
 	print "Should print numbers 1 to 5: "
-	mov eax, 0
+	mov rcx, 0
 	: loop
-		add $eax, 1
-		pop eax
+		add $rcx, 1
+		pop rcx
 
-		print $eax, " "
+		print $rcx, " "
 		
-		ifeq lt, $eax, 5
+		ifeq lt, $rcx, 5
 		jump loop
 	print "\n"
 
@@ -142,4 +147,4 @@
 
 	mov reg, -2
 	print "\nExit code should be 254.\n"
-	jump $$
+	jump ret

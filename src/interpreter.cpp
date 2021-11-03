@@ -1,5 +1,6 @@
 #include "interpreter.hpp"
 
+// TODO: Move this to a class and make helper functions methods
 void interpret(std::vector<Statement> &statements)
 {
 	// NOTE: Using an std::vector instead of a std::stack to allow internal acess to elements
@@ -10,51 +11,69 @@ void interpret(std::vector<Statement> &statements)
 	// NOTE: Stack pointer may jump around memory as stack reallocates. This is unavoidable, but really not great.
 	intptr_t *sp = &stack.back();
 	
-	intptr_t valReg = 0, valEax = 0, valVoid = 0;
+	intptr_t valReg = 0, valRax = 0, valRcx = 0;
 	
-	intptr_t *regReg = &valReg, *regEax = &valEax, *regVoid = &valVoid;
+	intptr_t *regReg = &valReg, *regRax = &valRax, *regRcx = &valRcx;
 	
 	// Using a lambda as this is tied to the execution context
-	auto get_register_value = [&](const Value &value) -> intptr_t
+	// TODO: Add overload when keeping track of the index is not necessary
+	auto get_register_value = [&](const Statement &stm, size_t &idx) -> intptr_t
 	{
-		// TODO: Recursive register dereference
+		// You can't know how many dereference there will be before the next argument, so you have to have a global index
+
+		// DONE: Recursive register dereference
+		// TODO: Add + operator for offsets
+
+		const Value *value = &stm.args[idx];
 		
-		if(value.type != Value::Type::REG && value.type != Value::Type::REG_VALUE)
+		size_t dereference = 0;
+		while(value->type == Value::Type::OPERATOR)
 		{
-			runtime_error("Interpreter error, value is not a register (Type is %i)", value.type);
+			dereference++;
+
+			value = &stm.args[++idx]; // This is catastrophically unsafe
+		}
+
+		if(value->type != Value::Type::REG)
+		{
+			runtime_error("Interpreter error, value is not a register (Type is %i)", value->type);
 		}
 
 		intptr_t *ptr;
-		switch(static_cast<Register>(value.val))
+		switch(static_cast<Register>(value->val))
 		{
 			case Register::REG:
 				ptr = regReg;
 				break;
-			case Register::EAX:
-				ptr = regEax;
+			case Register::RAX:
+				ptr = regRax;
+				break;
+			case Register::RCX:
+				ptr = regRcx;
 				break;
 			case Register::SP:
 				ptr = sp;
 				break;
-			case Register::VOID:
-				ptr = regVoid;
-				break;
 			default:
-				runtime_error("Uknown register: %i", value.val);
+				runtime_error("Uknown register: %i. This is probably an error in the compiler, which should have thrown an error.", value->val);
 				break;
 		}
 		
-		if(value.type == Value::Type::REG) return reinterpret_cast<intptr_t>(ptr);
-		else return *ptr; // REG_VALUE
+		for(; dereference > 0; dereference--)
+		{
+			ptr = reinterpret_cast<intptr_t *>(*ptr);
+		}
+
+		return reinterpret_cast<intptr_t>(ptr);
 	};
 	
 	// If the value is a register, return get_register_value, else return the normal value
-	auto get_value_if_register = [&](const Value &value) -> intptr_t
+	auto get_value_if_register = [&](const Statement &stm, size_t &idx) -> intptr_t
 	{
-		if(value.is_register())
-			return get_register_value(value);
+		if(stm.args[idx].is_register())
+			return get_register_value(stm, idx);
 		else
-			return value.val;
+			return stm.args[idx].val;
 	};
 
 	auto pop_stack = [&]() -> intptr_t
@@ -87,8 +106,10 @@ void interpret(std::vector<Statement> &statements)
 			}
 			else
 			{
-				left = get_value_if_register(stm.args[0]);
-				right = get_value_if_register(stm.args[1]);
+				size_t idx = 0;
+				left = get_value_if_register(stm, idx);
+				idx++;
+				right = get_value_if_register(stm, idx);
 			}	
 			
 			push_stack( op(left, right) );
@@ -97,18 +118,24 @@ void interpret(std::vector<Statement> &statements)
 	auto handle_shift_instruction = [&](const Statement &stm, intptr_t (*op)(intptr_t, intptr_t))
 	{
 		// shift [amount]
-		// shift [value], [amount]
-		intptr_t amount = get_value_if_register( stm.args[stm.numArgs == 2] ); // NOTE: Smarty pants way of saying "get second argument if there is two, else get first argument"
-		
-		if(stm.numArgs == 1)
+		// shift [operand], [amount]
+		size_t idx = 0;
+		intptr_t amount = get_value_if_register( stm, idx );
+		idx++;
+
+		if(idx == stm.numArgs)
 		{
 			push_stack( op( pop_stack(), amount ) );
 		}
 		else
 		{
-			push_stack( op( get_value_if_register(stm.args[0]), amount ) );
+			intptr_t operand = amount;
+			amount = get_value_if_register( stm, idx );
+
+			push_stack( op( operand, amount ) );
 		}
 	};
+
 
 	auto iterator = statements.begin();
 	// Search for start label
@@ -121,7 +148,7 @@ void interpret(std::vector<Statement> &statements)
 	if(iterator == statements.end())
 	{
 		// TODO: Check this at compile time
-		compile_error(0, 0, "No entry point (.start)");
+		compile_error(0, 0, "No entry point (.start label)");
 	}
 	
 	std::stack<std::vector<Statement>::iterator> callstack;
@@ -131,34 +158,40 @@ void interpret(std::vector<Statement> &statements)
 	{
 		auto &stm = *iterator;
 
+		// std::cout << stm << "\n" << "reg ptr: " << regReg << "\nreg value: " << valReg << "\n\n";
+
 		// DONE: The stack should probably grow
+		// TODO: THE STACK SHOULD GO BACKWARDS, OR ELSE THIS WON'T BE COMPATIBLE WITH ASSEMBLY
 		
 		// TODO: Needs a lot more helper functions 
 		switch(stm.ins.type)
 		{
 			case Instruction::Type::PUSH:
-				for(int i = 0; i < stm.numArgs; i++)
+				for(size_t i = 0; i < stm.numArgs; i++)
 				{
-					push_stack(get_value_if_register(stm.args[i]));
+					push_stack(get_value_if_register(stm, i));
 				}
 				break;
 			case Instruction::Type::POP:
-				if(stm.numArgs == 1)
+				if(stm.numArgs == 0) pop_stack();
+				else
 				{
-					*reinterpret_cast<intptr_t *>(get_register_value(stm.args[0])) = pop_stack();
+					size_t idx = 0;
+					*reinterpret_cast<intptr_t *>(get_register_value(stm, idx)) = pop_stack();
 				}
-				else pop_stack();
 				break;
 			case Instruction::Type::SWAP:
 			{
 				intptr_t val;
-				if(stm.numArgs == 1)
+				if(stm.numArgs == 0) val = 1;
+				else
 				{
-					val = get_value_if_register(stm.args[0]);
+					size_t idx = 0;
+					val = get_value_if_register(stm, idx);
 				}
-				else val = 1;
-
-				if(val < 1 || val >= stack.size())
+				
+				// NOTE: Casting to unsigned long is okay here, as to get a numerical error, the stack would need to be bigger than the amount of memory in the machine
+				if(val < 1 || static_cast<unsigned long>(val) >= stack.size())
 				{
 					runtime_error("Invalid swap amount: %" PRIdPTR ", stack size is %lu", val, stack.size());
 				}
@@ -202,7 +235,8 @@ void interpret(std::vector<Statement> &statements)
 				}
 				else
 				{
-					push_stack( ~get_value_if_register(stm.args[0]) );
+					size_t idx = 0;
+					push_stack( ~get_value_if_register(stm, idx) );
 				}
 				break;
 			case Instruction::Type::LSHIFT:
@@ -212,9 +246,29 @@ void interpret(std::vector<Statement> &statements)
 				handle_shift_instruction(stm, [](auto left, auto right){ return left >> right; });
 				break;
 			case Instruction::Type::MOV:
-				*reinterpret_cast<intptr_t *>(get_value_if_register(stm.args[0])) = get_value_if_register(stm.args[1]);
+			{
+				size_t idx = 0;
 
+				// NOTE: Order of assignment evaluation is unspecified
+				intptr_t *target = reinterpret_cast<intptr_t *>(get_value_if_register(stm, idx));
+				idx++;
+				intptr_t source = get_value_if_register(stm, idx);
+
+				*target = source;
 				break;
+			}
+			case Instruction::Type::MOVN:
+			{
+				size_t idx = 0;
+				
+				size_t amount = get_value_if_register(stm, idx);
+				idx++;
+				intptr_t *target = reinterpret_cast<intptr_t *>(get_value_if_register(stm, idx));
+				idx++;
+				intptr_t source = get_value_if_register(stm, idx);
+
+				memcpy(target, &source, amount);
+			}
 			case Instruction::Type::LABEL: // Pass through
 				break;
 			case Instruction::Type::JUMP:
@@ -226,7 +280,7 @@ void interpret(std::vector<Statement> &statements)
 				
 				auto match = statements.end();
 				
-				if(stm.args[0].val == hash("$$"))
+				if(stm.args[0].val == hash("ret"))
 				{
 					match = callstack.top();
 					callstack.pop();
@@ -294,17 +348,13 @@ void interpret(std::vector<Statement> &statements)
 				}
 				else
 				{
-					if( stm.args[1].is_register() )
-						left = get_register_value(stm.args[1]);
-					else
-						left = stm.args[1].val;
-
-					if( stm.args[2].is_register() )
-						right = get_register_value(stm.args[2]);
-					else
-						right = stm.args[2].val;
+					size_t idx = 1;
+					
+					left = get_value_if_register(stm, idx);
+					idx++;
+					right = get_value_if_register(stm, idx);
 				}
-				
+
 				if(!op(left, right))
 				{
 					iterator++;
@@ -312,24 +362,22 @@ void interpret(std::vector<Statement> &statements)
 
 				break;
 			case Instruction::Type::PRINT:
-				for(int i = 0; i < stm.numArgs; i++)
+				for(size_t i = 0; i < stm.numArgs; i++)
 				{
 					switch(stm.args[i].type)
 					{
 						case Value::Type::STRING:
 							printf("%s", reinterpret_cast<char *>(stm.args[i].val));	
 							break;
+						case Value::Type::OPERATOR:
 						case Value::Type::REG:
-							printf("%p", reinterpret_cast<void *>(get_register_value(stm.args[i])));
-							break;
-						case Value::Type::REG_VALUE:
-							printf("%" PRIdPTR, get_register_value(stm.args[i]));
+							printf("%" PRIdPTR, get_register_value(stm, i));
 							break;
 						case Value::Type::NUMBER:
 							printf("%" PRIdPTR, stm.args[i].val);
 							break;
 						case Value::Type::LABEL:
-							runtime_error("A label was somehow used in a print.");
+							runtime_error("Label used within print. Probable compiler error.");
 							break;
 					}
 				}
@@ -344,8 +392,10 @@ void interpret(std::vector<Statement> &statements)
 				}
 				else
 				{
-					syscallArgs = get_value_if_register(stm.args[0]);
-					syscallId = get_value_if_register(stm.args[1]);
+					size_t idx = 0;
+					syscallArgs = get_value_if_register(stm, idx);
+					idx++;
+					syscallId = get_value_if_register(stm, idx);
 				}
 				
 				// TIL order of evaluation of parameters is unspecified

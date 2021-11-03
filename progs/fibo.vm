@@ -1,6 +1,6 @@
 : fibo; (int n) -> int 
 	ifeq le, $sp, 1
-	jump $$
+	jump ret
 	
 	sub $sp, 1
 	call fibo
@@ -12,7 +12,7 @@
 	pop
 	add
 	
-	jump $$
+	jump ret
 
 : .start
 	mov reg, 0
@@ -26,8 +26,8 @@
 		add $reg, 1
 		pop reg
 		
-		ifeq le, $reg, 50
+		ifeq le, $reg, 30
 		jump loop
 	
 	mov reg, 0
-	jump $$; exit
+	jump ret; exit

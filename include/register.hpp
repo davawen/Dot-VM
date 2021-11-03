@@ -1,7 +1,7 @@
 enum struct Register
 {
 	REG,
-	EAX,
-	SP,
-	VOID
+	RAX,
+	RCX,
+	SP
 };
