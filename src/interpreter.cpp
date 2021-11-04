@@ -3,13 +3,11 @@
 // TODO: Move this to a class and make helper functions methods
 void interpret(std::vector<Statement> &statements)
 {
-	// NOTE: Using an std::vector instead of a std::stack to allow internal acess to elements
-	std::vector<intptr_t> stack;
-	stack.reserve(4096);
-	stack.push_back(0); // Avoid undefined behaviour
+	intptr_t *stack = new intptr_t[128000];
+	size_t stackSize = 128000;
 
 	// NOTE: Stack pointer may jump around memory as stack reallocates. This is unavoidable, but really not great.
-	intptr_t *sp = &stack.back();
+	intptr_t *sp = stack + stackSize;
 	
 	intptr_t valReg = 0, valRax = 0, valRcx = 0;
 	
@@ -78,22 +76,31 @@ void interpret(std::vector<Statement> &statements)
 
 	auto pop_stack = [&]() -> intptr_t
 	{
-		if(stack.empty())
+		if(sp >= stack + stackSize)
 		{
 			runtime_error("No element in stack!");
 		}
 		
-		intptr_t value = stack.back();
-		stack.pop_back();
-		sp = &stack.back();
-
-		return value;
+		return *sp++;
 	};
 	
 	auto push_stack = [&](intptr_t val)
 	{
-		stack.push_back(val);
-		sp = &stack.back();
+		if(sp == stack) // Reallocates stack
+		{
+			intptr_t *oldStack = stack;
+
+			stack = new intptr_t[stackSize * 2]; // Would have used realloc but no c++ equivalent
+
+			memcpy(stack + stackSize, oldStack, stackSize);
+			sp = stack + stackSize + (sp - oldStack);
+
+			stackSize *= 2;
+
+		}
+
+		sp--;
+		*sp = val;
 	};
 
 	auto handle_arithmetic_instruction = [&](const Statement &stm, intptr_t (*op)(intptr_t, intptr_t))
@@ -161,7 +168,7 @@ void interpret(std::vector<Statement> &statements)
 		// std::cout << stm << "\n" << "reg ptr: " << regReg << "\nreg value: " << valReg << "\n\n";
 
 		// DONE: The stack should probably grow
-		// TODO: THE STACK SHOULD GO BACKWARDS, OR ELSE THIS WON'T BE COMPATIBLE WITH ASSEMBLY
+		// DONE: The stack grows backwards
 		
 		// TODO: Needs a lot more helper functions 
 		switch(stm.ins.type)
@@ -191,16 +198,15 @@ void interpret(std::vector<Statement> &statements)
 				}
 				
 				// NOTE: Casting to unsigned long is okay here, as to get a numerical error, the stack would need to be bigger than the amount of memory in the machine
-				if(val < 1 || static_cast<unsigned long>(val) >= stack.size())
+				if(val < 1 || static_cast<long>(val) >= (stack + stackSize - sp))
 				{
-					runtime_error("Invalid swap amount: %" PRIdPTR ", stack size is %lu", val, stack.size());
+					runtime_error("Invalid swap amount: %" PRIdPTR ", stack size is %lu", val, (stack + stackSize - sp));
 				}
 				
-				intptr_t tmp = stack.back();
-				auto elementPos = stack.rbegin() + val; // Reverse iterator, so rbegin is the end of the vector
-
-				stack.back() = *elementPos;
-				*elementPos = tmp;
+				intptr_t tmp = *sp;
+				
+				*sp = *(sp + val);
+				*(sp + val) = tmp;
 				break;
 			}
 			case Instruction::Type::ADD:

@@ -1,0 +1,17 @@
+: main
+	
+	push 1, 2
+	
+	mov reg, $sp
+	print $reg, "\n"
+
+	mov reg, sp
+	add $reg, 8
+	pop reg
+	mov reg, $$reg
+	
+	; Should print 1
+	print $reg, "\n"
+	
+	mov reg, 0
+
