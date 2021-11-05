@@ -1,0 +1,44 @@
+: lsfr
+	; Get bit number 1 and 9
+	and $rax, 0x2
+	and $rax, 0x200
+	
+	; Move bit number 9 to bit number 1
+	rshift 8
+
+	; Xor bit number 1 and 9 together
+	xor
+	
+	; Shift rax by one
+	rshift $rax, 1
+	pop rax
+
+	; Store in bit number 15
+	lshift 14
+
+	or $sp, $rax
+	pop rax
+
+	; Clean up
+	pop
+
+	jump ret
+
+: main
+	mov rax, 0x8988
+	
+	mov rcx, 100
+
+	: loop
+		
+		call lsfr
+		print $rax, "\n"
+
+		sub $rcx, 1
+		pop rcx
+
+		ifeq gt, $rcx, 0
+		jump loop
+
+	mov reg, 0
+	jump ret
