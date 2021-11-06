@@ -1,0 +1,15 @@
+#include "lib.dotvm"
+
+: main
+	push 32, 249
+	
+	call divmod
+
+	print "249 / 32: ",$sp, "\n"
+	pop
+	print "249 % 32: ", $sp, "\n"
+	pop
+
+	mov reg, 0
+
+	jump ret

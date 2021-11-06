@@ -1,0 +1,21 @@
+: divmod
+	;    [b, a]
+	; -> [a / b, a mod b]
+	
+	swap ; [a, b]
+
+	push $sp ; [a, b, b]
+	swap 2 ; [b, b, a]
+	
+	push $sp ; [b, b, a, a]
+
+	swap 2 ; [b, a, b, a]
+	
+	div ; [b, a, a / b]
+
+	swap 2 ; [a / b, a, b]
+	swap ; [a / b, b, a]
+
+	mod ; [a / b, a mod b]
+	
+	jump ret

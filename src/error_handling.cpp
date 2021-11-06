@@ -1,8 +1,8 @@
 #include "error_handling.hpp"
 
-void compile_warning(int line, int pos, const char *format, ...)
+void compile_warning(int line, const char *format, ...)
 {
-	printf("\x1b[33mWarning on line %i at position %i:\x1b[0m\n", line, pos);
+	printf("\x1b[33mWarning on line %i:\x1b[0m\n", line);
 	
 	va_list argptr;
 	va_start(argptr, format);
@@ -14,9 +14,9 @@ void compile_warning(int line, int pos, const char *format, ...)
 	puts("\n\n");
 }
 
-void compile_error(int line, int pos, const char *format, ...)
+void compile_error(int line, const char *format, ...)
 {
-	printf("\n\x1b[101mCompile Error\x1b[49m\x1b[31m on line %i at position %i:\x1b[0m\n", line, pos);
+	printf("\n\x1b[101mCompile Error\x1b[49m\x1b[31m on line %i:\x1b[0m\n", line);
 	
 	va_list argptr;
 	va_start(argptr, format);

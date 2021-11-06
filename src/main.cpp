@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <list>
 #include <ostream>
 #include <algorithm>
 #include <filesystem>
@@ -14,6 +15,8 @@
 
 #include "instruction.hpp"
 #include "statement.hpp"
+
+#include "preprocess.hpp"
 #include "parse_instruction.hpp"
 
 #include "interpreter.hpp"
@@ -50,6 +53,15 @@ int main(int argc, char **argv)
 		printf("Error: incorrect file given.\n");
 		return EXIT_FAILURE;
 	}
+	
+	std::list<std::string> list;
+	
+	preprocess(*file, list);
+
+	for(auto &str : list){ std::cout << str << "|" << std::endl; }
+
+	return 0;
+
 	std::vector<Token> tokens;
 
 	tokenize(*file, tokens);

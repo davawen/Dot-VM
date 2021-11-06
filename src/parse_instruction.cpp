@@ -210,7 +210,7 @@ void tokenize(const char *filename, std::vector<Token> &tokens)
 					
 					if(newPart == NULL)
 					{
-						compile_error(line, pos + (ptr - part), "Non-terminated string.");
+						compile_error(line, "Non-terminated string.");
 					}
 					
 					// NOTE: This doesn't move anything, just replace the NUL at the end of part with a colon
@@ -343,7 +343,7 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Statement> &stat
 								args[argIdx].val = static_cast<intptr_t>(Register::SP);
 								break;
 							default:
-								compile_error(curToken.line, curToken.pos, "Uknown register: %s", curToken.value.c_str());
+								compile_error(curToken.line, "Uknown register: %s", curToken.value.c_str());
 								break;
 						}
 
@@ -353,7 +353,7 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Statement> &stat
 					}
 					break;
 				default:
-					compile_error(curToken.line, curToken.pos, "Unexpected token encountered: %i, %s", curToken.type, curToken.value.c_str());
+					compile_error(curToken.line, "Unexpected token encountered: %i, %s", curToken.type, curToken.value.c_str());
 					break;
 			}
 		}
