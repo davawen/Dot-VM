@@ -1,0 +1,55 @@
+; Project euler problem #1
+: main
+	
+	mov rcx, 1 
+    mov rax, 0
+	
+	; Good idea to add if block macros to make code more readable
+	: loop
+		push 3, $rcx
+		mod
+
+		ifeq eq, $sp, 0
+		jump div_by_three
+
+		jump not_div_by_three
+
+		: div_by_three
+		print $rcx, "\n"
+		add $rax, $rcx
+		pop rax
+
+		jump not_div_by_five
+
+		: not_div_by_three
+
+		pop
+
+		push 5, $rcx
+		mod
+
+		ifeq eq, $sp, 0
+		jump div_by_five
+
+		jump not_div_by_five
+
+		: div_by_five
+		print $rcx, "\n"
+		add $rax, $rcx
+		pop rax
+
+		: not_div_by_five
+
+		pop
+
+		add $rcx, 1
+		pop rcx
+
+		ifeq lt, $rcx, 1000
+		jump loop
+
+	print $rax, "\n"
+	
+	mov reg, 0
+	jump ret
+

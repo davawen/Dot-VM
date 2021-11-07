@@ -1,0 +1,53 @@
+: fibo; (int n) -> int 
+	ifeq le, $sp, 1
+	jump ret
+	
+	sub $sp, 1
+	call fibo
+	
+	swap
+	sub $sp, 2
+	call fibo
+	swap
+	pop
+	add
+	
+	jump ret
+
+: main
+	mov rcx, 1
+	mov rax, 0
+
+	: loop
+		push $rcx
+		call fibo
+		
+		push $sp
+		push 2
+		swap
+		mod
+
+		ifeq eq, $sp, 0
+		jump loop_true
+
+		jump loop_false
+
+		: loop_true
+			swap
+			add $sp, $rax
+			pop rax
+			swap
+
+		: loop_false
+		pop
+
+		add $rcx, 1
+		pop rcx
+		
+		ifeq lt, $sp, 4000000
+		jump loop
+	
+	print $rax, "\n"
+
+	mov reg, 0
+	jump ret
