@@ -1,4 +1,9 @@
-#include "lib.dotvm"
+#define SIZEOF_CHAR 1
+#define CONSTANT 2
+#define MAX_STRING_LENGTH 1024
+
+#define push2 push ARG_1, ARG_1
+
 
 : main
 	push 32, 249
