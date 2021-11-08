@@ -362,12 +362,6 @@ It is interacted with through these preprocessor directives:
   #endif
   ```
 
-- `#undef` directive, removes the definition of a macro.
-
-  ```asm
-  #undef MACRO
-  ```
-
 - `#error` directive, throws a compilation error with the given message.
 
   ```asm
