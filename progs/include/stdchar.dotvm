@@ -1,0 +1,20 @@
+#define '\0' 0
+#define 'a' 97
+
+: main
+	
+	mov reg, "A text" ; Just realized this shouldn't be allowed, as any text would be put into read-only memory when compiled
+	; There should be a way to explicitely ask for read-write memory (probably a decorator)
+
+	movn 1, $reg, 'a'
+	add $reg, 5
+	movn 1, $sp, '\0'
+
+	pop
+	
+	push $reg
+
+	call puts
+
+	mov reg, 0
+	jump ret

@@ -1,0 +1,21 @@
+#define NULL 0
+
+; args not implemented yet
+;#macro ADDTO ; (reg, val)
+;	push $#(ARG_1)
+;	push ARG_2
+;
+;	add
+;
+;	pop ARG_1
+;#endmacro
+
+#macro 2SWAP
+	; [a, b, c, d]
+	; [c, d, a, b]
+	
+	swap 2 ; [a, d, c, b]
+	swap   ; [a, d, b, c]
+	swap 3 ; [c, d, b, a]
+	swap   ; [c, d, a, b]
+#endmacro

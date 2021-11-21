@@ -8,7 +8,8 @@
 #include <functional>
 #include <unordered_set>
 #include <unordered_map>
+#include <cstring>
 
 #include <error_handling.hpp>
 
-void preprocess(const char *filename, std::list<std::string> &output);
+void preprocess(const char *filename, std::vector<std::string> &output);

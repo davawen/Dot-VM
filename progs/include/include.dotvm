@@ -1,20 +1,43 @@
-#define SIZEOF_CHAR 1
-#define CONSTANT 2
-#define MAX_STRING_LENGTH 1024
+#include "lib.dotvm"
+#include "macro.dotvm"
 
-#define push2 push ARG_1, ARG_1
-
-
-: main
-	push 32, 249
+: print_stack ; (int n)
 	
-	call divmod
+	; ..., n
 
-	print "249 / 32: ",$sp, "\n"
-	pop
-	print "249 % 32: ", $sp, "\n"
-	pop
+	pop rcx ; ...
 
+	: print_stack_loop
+		
+		mul $rcx, 8 ; ..., offset
+		
+		push sp
+		add         ; ..., sp + offset
+		
+		push 8      ; Account for additional values on the stak
+		add         ; ..., sp + offset + 8
+		
+		print $$sp, ", "
+		
+		sub $rcx, 1
+		pop rcx
+
+		ifeq gt $rcx, 0
+		jump print_stack_loop        
+	
+	print "\n"
+
+	jump ret
+
+: main        
+	
+	push 1, 2, 3, 4
+	
+	2SWAP
+
+	push 4
+	call print_stack
+	
 	mov reg, 0
 
 	jump ret

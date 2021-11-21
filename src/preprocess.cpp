@@ -1,6 +1,8 @@
 #include "preprocess.hpp"
 
-static bool read_file(const char *filename, std::list<std::string> &output)
+/// Dumps the given file line by line to 'output'.
+/// Returns false if there was an error when opening the file and true otherwise.
+static bool read_file(const char *filename, std::vector<std::string> &output)
 {
 	std::ifstream file(filename);
 
@@ -55,7 +57,44 @@ static void iterate_ignore_quotes(std::string &str, int (*func)(std::string &, s
 	iterate_ignore_quotes(str, 0, func);
 }
 
-void preprocess(const char *filename, std::list<std::string> &output)
+/// Search string 'str' for the string 'query', which is either have the the given delimeters on its side, or be on the borders of the string 
+/// Returns the index where query starts if it was found, and std::string::npos otherwise
+static size_t find_string(const std::string &str, const std::string &query, const char *delimeters)
+{
+	size_t i, j = 0;
+	for(i = 0; i < str.length(); i++)
+	{
+		if(str[i] == query[j])
+		{
+			size_t startValue = i;
+
+			// TODO: Replace this to use std::string::find instead
+
+			while(str[i] == query[j])
+			{
+				i++;
+				j++;
+
+				if(i >= str.length()) break;
+				if(j >= query.length()) break;
+			}
+
+			if(j < query.length()) // Couldn't finish searching for string
+			{
+				i = startValue;
+				j = 0;
+			}
+			else if(i >= str.length() || strchr(delimeters, str[i]))
+			{
+				return startValue;
+			}
+		}
+	}
+
+	return std::string::npos;
+}
+
+void preprocess(const char *filename, std::vector<std::string> &output)
 {
 	if(!read_file(filename, output))
 	{
@@ -96,7 +135,7 @@ void preprocess(const char *filename, std::list<std::string> &output)
 
 				includeFile = filenameDirectory + includeFile;
 
-				std::list<std::string> include_output;
+				std::vector<std::string> include_output;
 
 				if(!read_file(includeFile.c_str(), include_output))
 				{
@@ -185,47 +224,99 @@ void preprocess(const char *filename, std::list<std::string> &output)
 	}
 
 	// Process macros definitions
-	std::unordered_map<std::string, std::string> macros;
+	std::unordered_map<std::string, std::vector<std::string>> macros;
 	
 	it = output.begin();
 	while(it != output.end())
 	{
 		std::string &line = *it;
 
-		// First check all existing macros 
-		if(line[0] == '#')
+		size_t pos;
+		if((pos = line.find("#define")) != std::string::npos)
 		{
-			size_t pos;
-			if((pos = line.find("#define")) != std::string::npos)
+			pos += sizeof("#define"); // size of "#define" *with* NUL character, which counts as the space
+
+			// #define MACRO VALUE
+			//         ^pos ^posValue
+
+			size_t posValue = line.find(' ', pos);
+
+			std::string name = line.substr(pos, posValue - pos); // variable set for readability, should get optimized away
+
+			macros[name].push_back(line.substr(posValue + 1));
+
+			// std::cout << "Defined: \"" << name << "\"\n";
+
+			it = --output.erase(it);
+		}
+		else if((pos = line.find("#macro ")) != std::string::npos) // NOTE: Space is required to not check against #macrogroup
+		{
+			pos += sizeof("#macro");
+			
+			std::string name = line.substr(pos);
+
+			//#macro MACRO
+			//  ..
+			//#endmacro
+
+			auto startOfMacro = it;
+
+			while(true)
 			{
-				pos += 8; // Add size of "#define "
-				
-				// #define MACRO VALUE
-				//         ^pos  ^posValue
+				it++;
+				line = *it;
 
-				size_t posValue = line.find(' ', pos);
+				if(line[0] == '#' && find_string(line, "#endmacro", "") != std::string::npos) break;
 
-				macros[line.substr(pos, posValue - pos)] = line.substr(posValue + 1);
-
-				it = --output.erase(it);
+				macros[name].push_back(line);
 			}
-			else if((pos = line.find("#macro ")) != std::string::npos) // NOTE: Space is required to not check against #macrogroup
-			{
 
+			if(macros[name].size() == 0)
+			{
+				compile_error(0, "Empty macro %s", name.c_str()); // TODO: Line numbers soon to be added
+			}
+
+			// std::cout << "Defined: \"" << name << "\n";
+
+			it = output.erase(startOfMacro, it + 1) - 1;
+		}
+		else
+		{
+			for(auto &pair : macros)
+			{
+				size_t index;
+				if((index = find_string(line, pair.first, " ,\t")) != std::string::npos)
+				{
+					line.erase(index, pair.first.length());
+				}
+				else if((index = line.find("#(" + pair.first + ")")) != std::string::npos)
+				{
+					line.erase(index, pair.first.length() + sizeof("#()") - 1);
+				}
+
+				if(index != std::string::npos)
+				{
+					line.insert(index, pair.second[0]);
+
+					if(pair.second.size() > 1) output.insert(it + 1, pair.second.begin() + 1, pair.second.end());
+
+					it--;
+				}
 			}
 		}
 
 		it++;
 	}
 
-	// Iterate over every macro, and check if they contain non expanded macros.
-	// Continue until every macro is fully expanded
-	for(auto &pair : macros)
+	/*for(auto &pair: macros)
 	{
-		std::cout << "Name: " << pair.first << "\nValue: " << pair.second << "\n";
-	}
-
-	// Expand macros
+		std::cout << "Macro: \"" << pair.first << "\"\n{\n";
+		for(auto &str : pair.second)
+		{
+			std::cout << "\t" << str << "\n";
+		}
+		std::cout << "}\n";
+	}*/
 
 	// Process macro groups
 

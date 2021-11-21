@@ -1,7 +1,0 @@
-#include "lib.dotvm" ; Will not be included 
-
-: square
-	mul $sp, $sp
-	pop sp
-
-	jump ret

@@ -54,11 +54,11 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	
-	std::list<std::string> list;
+	std::vector<std::string> list;
 	
 	preprocess(*file, list);
 
-	for(auto &str : list){ std::cout << str << "|" << std::endl; }
+	for(auto &str : list){ std::cout << str << std::endl; }
 
 	return 0;
 
@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 	parse_instructions(tokens, statements);
 	
 
-	printf("\n");
+	printf("\n\n");
 	std::for_each(statements.begin(), statements.end(), [](Statement &ins){ std::cout << ins << '\n'; });
 	//
 	
