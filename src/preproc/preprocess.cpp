@@ -93,7 +93,7 @@ static std::string random_string( size_t length )
     return str;
 }
 
-void search_macro(std::vector<std::string> &output, std::vector<std::string>::iterator it, MacroMap &macros)
+void search_macro(std::vector<std::string> &output, std::vector<std::string>::iterator it, const MacroMap &macros)
 {
 	std::string &line = *it;
 
@@ -103,12 +103,12 @@ void search_macro(std::vector<std::string> &output, std::vector<std::string>::it
 		if((index = find_string(line, pair.first, " ,\t")) != std::string::npos)
 		{
 			line.erase(index, pair.first.length());
-			expand_simple_macro(output, it, index, macros, pair.first);
+			expand_simple_macro(output, it, index, macros, pair.second);
 		}
 		else if((index = line.find("#(" + pair.first + ")")) != std::string::npos)
 		{
 			line.erase(index, pair.first.length() + 3);
-			expand_simple_macro(output, it, index, macros, pair.first);
+			expand_simple_macro(output, it, index, macros, pair.second);
 		}
 		else if((index = line.find("#(" + pair.first)) != std::string::npos)
 		{
@@ -139,14 +139,19 @@ void search_macro(std::vector<std::string> &output, std::vector<std::string>::it
 			args[std::string("ARG_") + std::to_string(argIdx)].push_back(line.substr(argPos, macroEnd - argPos));
 
 			args["NUM_ARGS"].push_back(std::to_string(argIdx));
+			args["MACRO_INDEX"].push_back(pair.first);
+			args["MACRO_ID"].push_back(random_string(16));
+
+			line.erase(index, macroEnd - index + 1); // +1 to also erase the end parenthese
+
+			expand_macro(output, it, index, macros, pair.second, args);
 		}
 	}
 }
 
-void expand_simple_macro(std::vector<std::string> &output, std::vector<std::string>::iterator it, size_t pos, MacroMap &macros, const std::string &macroName)
+void expand_simple_macro(std::vector<std::string> &output, std::vector<std::string>::iterator it, const size_t pos, const MacroMap &macros, const Macro &macro)
 {
 	std::string &line = *it;
-	Macro &macro = macros[macroName];
 
 	line.insert(pos, macro[0]);
 
@@ -162,10 +167,22 @@ void expand_simple_macro(std::vector<std::string> &output, std::vector<std::stri
 	//it--;
 }
 
-/*void expand_macro(std::vector<std::string> &output, std::vector<std::string>::iterator it, std::pair<size_t, size_t> pos, MacroMap &macros, const std::string &macroName, MacroMap &arg)
+void expand_macro(std::vector<std::string> &output, std::vector<std::string>::iterator it, const size_t pos, const MacroMap &macros, const Macro &macro, const MacroMap &args)
 {
+	std::string &line = *it;
 
-}*/
+	line.insert(pos, macro[0]);
+
+	if(macro.size() > 1) output.insert(it + 1, macro.begin() + 1, macro.end());
+
+	for(size_t i = 0; i < macro.size(); i++)
+	{
+		search_macro(output, it, args);
+		search_macro(output, it, macros);
+
+		it++;
+	}
+}
 
 void preprocess(const char *filename, std::vector<std::string> &output)
 {

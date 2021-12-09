@@ -435,21 +435,21 @@ You will sometimes need to 'link' two or more macros together, such as when maki
 If that's the case, you will have to use a macro group. \
 As seen before, a macro group is started with the `#macrogroup` directive, and ended with the `#endmacrogroup` directive.
 
-Inside of a macro group, two special macros, `__GROUP_INDEX__` and `__GROUP_ID__` will be defined.
+Inside of a macro group, two special macros, `GROUP_INDEX` and `GROUP_ID` will be defined.
 They are special as they are processed after all of regular macros are expanded.
 
 When they are nested, the deepest one always take precedence:
 ```asm
-; #(__GROUP_INDEX__) is 0, this is the global macro group
+; #(GROUP_INDEX) is 0, this is the global macro group
 
 #macrogroup
-	; #(__GROUP_INDEX__) is 1
+	; #(GROUP_INDEX) is 1
 
 	#macrogroup
-		; #(__GROUP_INDEX__) is 2
+		; #(GROUP_INDEX) is 2
 	#endmacrogroup
 
-	; #(__GROUP_INDEX__) is 1
+	; #(GROUP_INDEX) is 1
 #endmacrogroup
 ```
 
@@ -459,15 +459,15 @@ As macrogroups are processed after regular macros, they can be included in macro
 	#macrogroup
 	
 	ifeq ARG_1, ARG_2, ARG_3
-	jump #(__GROUP_ID__)true
+	jump #(GROUP_ID)true
 	
-	jump #(__GROUP_ID__)false
+	jump #(GROUP_ID)false
 	
-	: #(__GROUP_ID__)true
+	: #(GROUP_ID)true
 #endmacro
 
 #macro ifblockend
-	: #(__GROUP_ID__)false
+	: #(GROUP_ID)false
 
 	#endmacrogroup
 #endmacro
