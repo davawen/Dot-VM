@@ -16,7 +16,7 @@
 #include "instruction.hpp"
 #include "statement.hpp"
 
-#include "preprocess.hpp"
+#include "preproc/preprocess.hpp"
 #include "parse_instruction.hpp"
 
 #include "interpreter.hpp"

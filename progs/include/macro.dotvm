@@ -19,3 +19,10 @@
 	swap 3 ; [c, d, b, a]
 	swap   ; [c, d, a, b]
 #endmacro
+
+#macro PUSH2 ; (a, b)
+	push ARG_1
+	push ARG_2
+#endmacro
+
+#(PUSH2 $reg, 123)

@@ -378,33 +378,33 @@ Macros must satisfy the same naming requirement as labels, only letters, numbers
 Built-in macros:
 -	`__FILE__`: Name of the current file
 -	Only defined in macros:
-	-	`__NUM_ARGS__`: Number of arguments given
-	-	`ARG_n`: Argument with index n, where n is a number between 0 and `__MAX_MACRO_ARGS__`
-	-	`__MAX_MACRO_ARGS__`: Maximum number of arguments which can be given to a macro.
+	-	`NUM_ARGS`: Number of arguments given
+	-	`ARG_n`: Argument with index n, where n is a number between 0 and `MAX_MACRO_ARGS`
+	-	`MAX_MACRO_ARGS`: Maximum number of arguments which can be given to a macro.
 		Default is 16, but can be adjusted through a compiler flag.
-	-	`__MACRO_INDEX__`: Unique index given to a macro.
-	-	`__MACRO_ID__`: Unique identifier given to each expansion of a macro. \
-		This means that between two expansions of the same macro, `__MACRO_INDEX__` will be equal but not `__MACRO_ID__`.
+	-	`MACRO_INDEX`: Unique index given to a macro.
+	-	`MACRO_ID`: Unique identifier given to each expansion of a macro. \
+		This means that between two expansions of the same macro, `MACRO_INDEX` will be equal but not `MACRO_ID`.
 -	Only defined in macro groups:
-	-	`__GROUP_INDEX__`: Unique index given to macro group.
-	-	`__GROUP_ID__`: Unique identifier given to a macro group.
+	-	`GROUP_INDEX`: Unique index given to macro group.
+	-	`GROUP_ID`: Unique identifier given to a macro group.
 
-Macros can be expanded implicitely, if they are on their own, or explicitely, if you need to compose things together. \
+Macros can be expanded implicitely, if they are on their own, or explicitely, if you need to compose things together or use arguments. \
 It that case, `#()` will be used :
 
 ```asm
-#define define_label : label#(ARG_1) ; (value)
+#define DEFINE_LABEL : label#(ARG_1) ; (value)
 ; labelARG_1 would be considered a single word and wouldn't work
 
-define_label 1
+#(DEFINE_LABEL 1)
 ; Gets expanded to:
 : label1
 ```
 
 Multi-line macro definition:
 ```asm
-#macro jifeq ; (label, word, val1, val2)
-	#ifnis __NUM_ARGS__ 4
+#macro JIFEQ ; (label, word, val1, val2)
+	#ifnis NUM_ARGS 4
 		#error "Wrong number of arguments given to jifeq"
 	#endif
 	
@@ -412,7 +412,7 @@ Multi-line macro definition:
 	jump ARG_1
 #endmacro
 
-jifeq somelabel, eq, $reg, 0
+#(JIFEQ somelabel, eq, $reg, 0)
 
 ; Gets expanded to: 
 ; (trailing spaces are removed)
