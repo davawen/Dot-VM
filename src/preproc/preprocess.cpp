@@ -2,17 +2,19 @@
 
 /// Dumps the given file line by line to 'output'.
 /// Returns false if there was an error when opening the file and true otherwise.
-static bool read_file(const char *filename, std::vector<std::string> &output)
+static bool read_file(const char *filename, std::vector<Line> &output)
 {
 	std::ifstream file(filename);
 
 	if(!file.is_open()) return false;
 
 	std::string line;
+	size_t num = 1;
 
 	while(std::getline(file, line))
 	{
-		output.push_back(line);
+		output.push_back(Line(line, filename, num));
+		num++;
 	}
 
 	return true;
@@ -93,29 +95,29 @@ static std::string random_string( size_t length )
     return str;
 }
 
-void search_macro(std::vector<std::string> &output, std::vector<std::string>::iterator it, const MacroMap &macros)
+void search_macro(std::vector<Line> &output, std::vector<Line>::iterator it, const MacroMap &macros)
 {
-	std::string &line = *it;
+	Line &line = *it;
 
 	for(auto &pair : macros)
 	{
 		size_t index;
-		if((index = find_string(line, pair.first, " ,\t")) != std::string::npos)
+		if((index = find_string(line.content, pair.first, " ,\t")) != std::string::npos)
 		{
-			line.erase(index, pair.first.length());
+			line.content.erase(index, pair.first.length());
 			expand_simple_macro(output, it, index, macros, pair.second);
 		}
-		else if((index = line.find("#(" + pair.first + ")")) != std::string::npos)
+		else if((index = line.content.find("#(" + pair.first + ")")) != std::string::npos)
 		{
-			line.erase(index, pair.first.length() + 3);
+			line.content.erase(index, pair.first.length() + 3);
 			expand_simple_macro(output, it, index, macros, pair.second);
 		}
-		else if((index = line.find("#(" + pair.first)) != std::string::npos)
+		else if((index = line.content.find("#(" + pair.first)) != std::string::npos)
 		{
 			MacroMap args;
-			size_t macroEnd = line.find(')', index); // TODO: Make due for macros in macros
+			size_t macroEnd = line.content.find(')', index); // TODO: Make due for macros in macros
 
-			if(macroEnd == std::string::npos) compile_error(0, "Unfinished expansion at macro %s", pair.first.c_str());
+			if(macroEnd == std::string::npos) compile_error(line.line, "Unfinished expansion at macro %s", pair.first.c_str());
 
 			//#(MACRO ARG1,ARG2)
 			//↑       ↑
@@ -125,37 +127,44 @@ void search_macro(std::vector<std::string> &output, std::vector<std::string>::it
 
 			while(argPos < macroEnd)
 			{
-				size_t newArgPos = line.find(',', argPos);
+				size_t newArgPos = line.content.find(',', argPos);
 
 				if(newArgPos > macroEnd) break;
-				if(newArgPos == argPos) compile_error(0, "Empty argument at macro expansion %s", pair.first.c_str());
+				if(newArgPos == argPos) compile_error(line.line, "Empty argument at macro expansion %s", pair.first.c_str());
 
-				args[std::string("ARG_") + std::to_string(argIdx)].push_back(line.substr(argPos, newArgPos - argPos));
+				args[std::string("ARG_") + std::to_string(argIdx)].push_back(line.content.substr(argPos, newArgPos - argPos));
 				
 				argPos = newArgPos + 1;
 				argIdx++;
 			}
 
-			args[std::string("ARG_") + std::to_string(argIdx)].push_back(line.substr(argPos, macroEnd - argPos));
+			args[std::string("ARG_") + std::to_string(argIdx)].push_back(line.content.substr(argPos, macroEnd - argPos));
 
 			args["NUM_ARGS"].push_back(std::to_string(argIdx));
 			args["MACRO_INDEX"].push_back(pair.first);
 			args["MACRO_ID"].push_back(random_string(16));
 
-			line.erase(index, macroEnd - index + 1); // +1 to also erase the end parenthese
+			line.content.erase(index, macroEnd - index + 1); // +1 to also erase the end parenthese
 
 			expand_macro(output, it, index, macros, pair.second, args);
 		}
 	}
 }
 
-void expand_simple_macro(std::vector<std::string> &output, std::vector<std::string>::iterator it, const size_t pos, const MacroMap &macros, const Macro &macro)
+void expand_simple_macro(std::vector<Line> &output, std::vector<Line>::iterator it, const size_t pos, const MacroMap &macros, const Macro &macro)
 {
-	std::string &line = *it;
+	Line &line = *it;
 
-	line.insert(pos, macro[0]);
+	line.content.insert(pos, macro[0]);
 
-	if(macro.size() > 1) output.insert(it + 1, macro.begin() + 1, macro.end());
+	if(macro.size() > 1)
+	{
+		output.insert(it + 1, macro.size() - 1, Line("", line.file, line.line));
+		for(size_t i = 1; i < macro.size(); i++)
+		{
+			(it + i)->content = macro[i];
+		}
+	}
 
 	for(size_t i = 0; i < macro.size(); i++)
 	{
@@ -163,17 +172,22 @@ void expand_simple_macro(std::vector<std::string> &output, std::vector<std::stri
 
 		it++;
 	}
-
-	//it--;
 }
 
-void expand_macro(std::vector<std::string> &output, std::vector<std::string>::iterator it, const size_t pos, const MacroMap &macros, const Macro &macro, const MacroMap &args)
+void expand_macro(std::vector<Line> &output, std::vector<Line>::iterator it, const size_t pos, const MacroMap &macros, const Macro &macro, const MacroMap &args)
 {
-	std::string &line = *it;
+	Line &line = *it;
 
-	line.insert(pos, macro[0]);
+	line.content.insert(pos, macro[0]);
 
-	if(macro.size() > 1) output.insert(it + 1, macro.begin() + 1, macro.end());
+	if(macro.size() > 1)
+	{
+		output.insert(it + 1, macro.size() - 1, Line("", line.file, line.line));
+		for(size_t i = 1; i < macro.size(); i++)
+		{
+			(it + i)->content = macro[i];
+		}
+	}
 
 	for(size_t i = 0; i < macro.size(); i++)
 	{
@@ -184,7 +198,7 @@ void expand_macro(std::vector<std::string> &output, std::vector<std::string>::it
 	}
 }
 
-void preprocess(const char *filename, std::vector<std::string> &output)
+void preprocess(const char *filename, std::vector<Line> &output)
 {
 	if(!read_file(filename, output))
 	{
@@ -195,26 +209,24 @@ void preprocess(const char *filename, std::vector<std::string> &output)
 	filenameDirectory.erase(filenameDirectory.find_last_of('/') + 1);
 	
 	// Include directives
-	size_t lineNum = 1;
 	auto it = output.begin();
 	std::unordered_set<std::string> includedFiles;
 
-	// TODO: Heriarchical view of inclusion for error logging
-	// Or some kind if way to see who included what where
+	// DONE: Heriarchical view of inclusion for error logging (sort of)
 	
 	while(it != output.end())
 	{
-		std::string &line = *it;
+		Line &line = *it;
 
-		if(line[0] == '#')
+		if(line.content[0] == '#')
 		{
 			// Chech for preprocessor directives
 
-			if(line.find("#include") != std::string::npos)
+			if(line.content.find("#include") != std::string::npos)
 			{
 				// TODO: Make marking files more robust
-				std::string includeFile = line.substr(line.find("\"") + 1, line.rfind("\"") - line.find("\"") - 1);
-				if(line.find("#include_recursive") == std::string::npos && includedFiles.find(includeFile) != includedFiles.end()) // If file already included and not recursive
+				std::string includeFile = line.content.substr(line.content.find("\"") + 1, line.content.rfind("\"") - line.content.find("\"") - 1);
+				if(line.content.find("#include_recursive") == std::string::npos && includedFiles.find(includeFile) != includedFiles.end()) // If file already included and not recursive
 				{
 					// Already included
 					it = output.erase(it);
@@ -225,39 +237,37 @@ void preprocess(const char *filename, std::vector<std::string> &output)
 
 				includeFile = filenameDirectory + includeFile;
 
-				std::vector<std::string> include_output;
+				std::vector<Line> include_output;
 
 				if(!read_file(includeFile.c_str(), include_output))
 				{
-					// Line num isn't accurate, but it works for now
-					compile_error(lineNum, "Included file does not exists: %s", includeFile.c_str());
+					compile_error(line.line, "Included file does not exists: %s", includeFile.c_str());
 				}
 
-				auto newIt = output.insert(it, include_output.begin(), include_output.end());
-				output.erase(it);
-				it = newIt;
+				it = output.erase(it);
+
+				it = output.insert(it, include_output.begin(), include_output.end());
+
 				it--; // Counter-balance it++
 			}
 		}
 
 		it++;
-		lineNum++;
 	}
 	
 	// Remove trailing spaces / comments
-	lineNum = 1;
 	it = output.begin();
 	while(it != output.end())
 	{
-		std::string &line = *it;
+		Line &line = *it;
 		
 		// Remove comments
-		iterate_ignore_quotes(line,
-			[](std::string &line, size_t &i)
+		iterate_ignore_quotes(line.content,
+			[](std::string &content, size_t &i)
 			{
-				if(line[i] == ';')
+				if(content[i] == ';')
 				{
-					line.erase(i);
+					content.erase(i);
 					return 1;
 				}
 
@@ -269,31 +279,31 @@ void preprocess(const char *filename, std::vector<std::string> &output)
 		size_t i = 0;
 		while(true)
 		{
-			if(!isblank(line[i])) break;
+			if(!isblank(line.content[i])) break;
 
 			i++;
 		}
 
 		if(i > 0)
 		{
-			line.erase(0, i);
+			line.content.erase(0, i);
 		}
 
 		// Remove blanks between arguments
-		iterate_ignore_quotes(line,
-			[](std::string &line, size_t &i)
+		iterate_ignore_quotes(line.content,
+			[](std::string &content, size_t &i)
 			{
 				// Remove this space if previous character is one of those
-				if(isblank(line[i]) && (strchr(",(", line[i-1]) || isblank(line[i-1])))
+				if(isblank(content[i]) && (strchr(",(", content[i-1]) || isblank(content[i-1])))
 				{
-					line.erase(i, 1);
+					content.erase(i, 1);
 					i--;
 				}
 
 				// Remove this space if next character is one of those
-				if(isblank(line[i]) && i < line.length()-1 && strchr(",)", line[i+1]))
+				if(isblank(content[i]) && i < content.length()-1 && strchr(",)", content[i+1]))
 				{
-					line.erase(i, 1);
+					content.erase(i, 1);
 					i--;
 				}
 
@@ -303,21 +313,20 @@ void preprocess(const char *filename, std::vector<std::string> &output)
 
 		// Remove all blanks at the end
 		// Useful for instructions with no arguments
-		i = line.length() - 1;
-		while(i > 0 && i < line.length()) // Avoid integer overflow if length is 0
+		i = line.content.length() - 1;
+		while(i > 0 && i < line.content.length()) // Avoid integer overflow if length is 0
 		{
-			if(!isblank(line[i])) break;
+			if(!isblank(line.content[i])) break;
 
 			i--;
 		}
 
-		if(i > 0 && i < line.length() - 1)
+		if(i > 0 && i < line.content.length() - 1)
 		{
-			line.erase(i + 1);
+			line.content.erase(i + 1);
 		}
 
 		it++;
-		lineNum++;
 	}
 
 	// Process macros definitions
@@ -326,31 +335,31 @@ void preprocess(const char *filename, std::vector<std::string> &output)
 	it = output.begin();
 	while(it != output.end())
 	{
-		std::string &line = *it;
+		Line &line = *it;
 
 		size_t pos;
-		if((pos = line.find("#define")) != std::string::npos)
+		if((pos = line.content.find("#define")) != std::string::npos)
 		{
 			pos += sizeof("#define"); // size of "#define" *with* NUL character, which counts as the space
+
+			size_t posValue = line.content.find(' ', pos);
 
 			// #define MACRO VALUE
 			//         ^pos ^posValue
 
-			size_t posValue = line.find(' ', pos);
+			std::string name = line.content.substr(pos, posValue - pos);
 
-			std::string name = line.substr(pos, posValue - pos); // variable set for readability, should get optimized away
-
-			macros[name].push_back(line.substr(posValue + 1));
+			macros[name].push_back(line.content.substr(posValue + 1));
 
 			// std::cout << "Defined: \"" << name << "\"\n";
 
 			it = --output.erase(it);
 		}
-		else if((pos = line.find("#macro ")) != std::string::npos) // NOTE: Space is required to not check against #macrogroup
+		else if((pos = line.content.find("#macro ")) != std::string::npos) // NOTE: Space is required to not check against #macrogroup
 		{
 			pos += sizeof("#macro");
 			
-			std::string name = line.substr(pos);
+			std::string name = line.content.substr(pos);
 
 			//#macro MACRO
 			//  ..
@@ -363,14 +372,14 @@ void preprocess(const char *filename, std::vector<std::string> &output)
 				it++;
 				line = *it;
 
-				if(line[0] == '#' && find_string(line, "#endmacro", "") != std::string::npos) break;
+				if(line.content[0] == '#' && find_string(line.content, "#endmacro", "") != std::string::npos) break;
 
-				macros[name].push_back(line);
+				macros[name].push_back(line.content);
 			}
 
 			if(macros[name].size() == 0)
 			{
-				compile_error(0, "Empty macro %s", name.c_str()); // TODO: Line numbers soon to be added
+				compile_error(line.line, "Empty macro %s", name.c_str()); // DONE: Line numbers 
 			}
 
 			// std::cout << "Defined: \"" << name << "\n";

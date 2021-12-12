@@ -17,12 +17,15 @@
 #include "statement.hpp"
 
 #include "preproc/preprocess.hpp"
+#include "preproc/line.hpp"
+
 #include "parse_instruction.hpp"
 
 #include "interpreter.hpp"
 
 #define FLAG_IMPLEMENTATION
 #include "flags.hpp"
+#undef FLAG_IMPLEMENTATION
 
 namespace fs = std::filesystem;
 
@@ -54,11 +57,11 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	
-	std::vector<std::string> list;
+	std::vector<Line> list;
 	
 	preprocess(*file, list);
 
-	for(auto &str : list){ std::cout << str << std::endl; }
+	for(auto &str : list){ std::cout << str.file << " " << str.line << " | " << str.content << std::endl; }
 
 	return 0;
 
