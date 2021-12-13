@@ -99,38 +99,38 @@ void search_macro(std::vector<Line> &output, std::vector<Line>::iterator it, con
 {
 	Line &line = *it;
 
-	for(auto &pair : macros)
+	for(const auto &[macroName, macro] : macros)
 	{
 		size_t index;
-		if((index = find_string(line.content, pair.first, " ,\t")) != std::string::npos)
+		if((index = find_string(line.content, macroName, " ,\t")) != std::string::npos)
 		{
-			line.content.erase(index, pair.first.length());
-			expand_simple_macro(output, it, index, macros, pair.second);
+			line.content.erase(index, macroName.length());
+			expand_macro(output, it, index, macros, macro);
 		}
-		else if((index = line.content.find("#(" + pair.first + ")")) != std::string::npos)
+		else if((index = line.content.find("#(" + macroName + ")")) != std::string::npos)
 		{
-			line.content.erase(index, pair.first.length() + 3);
-			expand_simple_macro(output, it, index, macros, pair.second);
+			line.content.erase(index, macroName.length() + 3);
+			expand_macro(output, it, index, macros, macro);
 		}
-		else if((index = line.content.find("#(" + pair.first)) != std::string::npos)
+		else if((index = line.content.find("#(" + macroName)) != std::string::npos)
 		{
 			MacroMap args;
 			size_t macroEnd = line.content.find(')', index); // TODO: Make due for macros in macros
 
-			if(macroEnd == std::string::npos) compile_error(line.line, "Unfinished expansion at macro %s", pair.first.c_str());
+			if(macroEnd == std::string::npos) compile_error(line.line, "Unfinished expansion at macro %s", macroName.c_str());
 
 			//#(MACRO ARG1,ARG2)
 			//↑       ↑
 			//idx     idx+...+3
 			size_t argIdx = 1;
-			size_t argPos = index + pair.first.length() + 3;
+			size_t argPos = index + macroName.length() + 3;
 
 			while(argPos < macroEnd)
 			{
 				size_t newArgPos = line.content.find(',', argPos);
 
 				if(newArgPos > macroEnd) break;
-				if(newArgPos == argPos) compile_error(line.line, "Empty argument at macro expansion %s", pair.first.c_str());
+				if(newArgPos == argPos) compile_error(line.line, "Empty argument at macro expansion %s", macroName.c_str());
 
 				args[std::string("ARG_") + std::to_string(argIdx)].push_back(line.content.substr(argPos, newArgPos - argPos));
 				
@@ -141,17 +141,17 @@ void search_macro(std::vector<Line> &output, std::vector<Line>::iterator it, con
 			args[std::string("ARG_") + std::to_string(argIdx)].push_back(line.content.substr(argPos, macroEnd - argPos));
 
 			args["NUM_ARGS"].push_back(std::to_string(argIdx));
-			args["MACRO_INDEX"].push_back(pair.first);
+			args["MACRO_INDEX"].push_back(macroName);
 			args["MACRO_ID"].push_back(random_string(16));
 
 			line.content.erase(index, macroEnd - index + 1); // +1 to also erase the end parenthese
 
-			expand_macro(output, it, index, macros, pair.second, args);
+			expand_macro(output, it, index, macros, macro, args);
 		}
 	}
 }
 
-void expand_simple_macro(std::vector<Line> &output, std::vector<Line>::iterator it, const size_t pos, const MacroMap &macros, const Macro &macro)
+void expand_macro(std::vector<Line> &output, std::vector<Line>::iterator it, const size_t pos, const MacroMap &macros, const Macro &macro)
 {
 	Line &line = *it;
 
@@ -246,9 +246,10 @@ void preprocess(const char *filename, std::vector<Line> &output)
 
 				it = output.erase(it);
 
+				// NOTE: Bug was here because insert might render iterator invalid
 				it = output.insert(it, include_output.begin(), include_output.end());
 
-				it--; // Counter-balance it++
+				continue;
 			}
 		}
 
@@ -393,16 +394,6 @@ void preprocess(const char *filename, std::vector<Line> &output)
 
 		it++;
 	}
-
-	/*for(auto &pair: macros)
-	{
-		std::cout << "Macro: \"" << pair.first << "\"\n{\n";
-		for(auto &str : pair.second)
-		{
-			std::cout << "\t" << str << "\n";
-		}
-		std::cout << "}\n";
-	}*/
 
 	// Process macro groups
 
