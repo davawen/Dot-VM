@@ -95,9 +95,9 @@ static std::string random_string( size_t length )
     return str;
 }
 
-void search_macro(std::vector<Line> &output, std::vector<Line>::iterator it, const MacroMap &macros)
+void search_macro(std::vector<Line> &output, size_t idx, const MacroMap &macros)
 {
-	Line &line = *it;
+	Line &line = output[idx];
 
 	for(const auto &[macroName, macro] : macros)
 	{
@@ -105,12 +105,12 @@ void search_macro(std::vector<Line> &output, std::vector<Line>::iterator it, con
 		if((index = find_string(line.content, macroName, " ,\t")) != std::string::npos)
 		{
 			line.content.erase(index, macroName.length());
-			expand_macro(output, it, index, macros, macro);
+			expand_macro(output, idx, index, macros, macro);
 		}
 		else if((index = line.content.find("#(" + macroName + ")")) != std::string::npos)
 		{
 			line.content.erase(index, macroName.length() + 3);
-			expand_macro(output, it, index, macros, macro);
+			expand_macro(output, idx, index, macros, macro);
 		}
 		else if((index = line.content.find("#(" + macroName)) != std::string::npos)
 		{
@@ -146,55 +146,48 @@ void search_macro(std::vector<Line> &output, std::vector<Line>::iterator it, con
 
 			line.content.erase(index, macroEnd - index + 1); // +1 to also erase the end parenthese
 
-			expand_macro(output, it, index, macros, macro, args);
+			expand_macro(output, idx, index, macros, macro, args);
 		}
 	}
 }
 
-void expand_macro(std::vector<Line> &output, std::vector<Line>::iterator it, const size_t pos, const MacroMap &macros, const Macro &macro)
+void expand_macro(std::vector<Line> &output, size_t idx, const size_t pos, const MacroMap &macros, const Macro &macro)
 {
-	Line &line = *it;
+
+	Line &line = output[idx];
 
 	line.content.insert(pos, macro[0]);
 
 	if(macro.size() > 1)
 	{
-		output.insert(it + 1, macro.size() - 1, Line("", line.file, line.line));
+		output.insert(output.begin() + idx + 1, macro.size() - 1, Line("", line.file, line.line));
 		for(size_t i = 1; i < macro.size(); i++)
 		{
-			(it + i)->content = macro[i];
+			output[idx + i].content = macro[i];
 		}
-	}
-
-	for(size_t i = 0; i < macro.size(); i++)
-	{
-		search_macro(output, it, macros);
-
-		it++;
 	}
 }
 
-void expand_macro(std::vector<Line> &output, std::vector<Line>::iterator it, const size_t pos, const MacroMap &macros, const Macro &macro, const MacroMap &args)
+void expand_macro(std::vector<Line> &output, size_t idx, const size_t pos, const MacroMap &macros, const Macro &macro, const MacroMap &args)
 {
-	Line &line = *it;
+	Line &line = output[idx];
 
 	line.content.insert(pos, macro[0]);
 
 	if(macro.size() > 1)
 	{
-		output.insert(it + 1, macro.size() - 1, Line("", line.file, line.line));
+		output.insert(output.begin() + idx + 1, macro.size() - 1, Line("", line.file, line.line));
 		for(size_t i = 1; i < macro.size(); i++)
 		{
-			(it + i)->content = macro[i];
+			output[idx + i].content = macro[i];
 		}
 	}
 
 	for(size_t i = 0; i < macro.size(); i++)
 	{
-		search_macro(output, it, args);
-		search_macro(output, it, macros);
+		search_macro(output, idx, args);
 
-		it++;
+		idx++;
 	}
 }
 
@@ -333,10 +326,10 @@ void preprocess(const char *filename, std::vector<Line> &output)
 	// Process macros definitions
 	MacroMap macros;
 	
-	it = output.begin();
-	while(it != output.end())
+	size_t idx = 0;
+	while(idx < output.size())
 	{
-		Line &line = *it;
+		Line &line = output[idx];
 
 		size_t pos;
 		if((pos = line.content.find("#define")) != std::string::npos)
@@ -354,7 +347,8 @@ void preprocess(const char *filename, std::vector<Line> &output)
 
 			// std::cout << "Defined: \"" << name << "\"\n";
 
-			it = --output.erase(it);
+			output.erase(output.begin() + idx); 
+			continue; // idx is now the next element
 		}
 		else if((pos = line.content.find("#macro ")) != std::string::npos) // NOTE: Space is required to not check against #macrogroup
 		{
@@ -366,36 +360,81 @@ void preprocess(const char *filename, std::vector<Line> &output)
 			//  ..
 			//#endmacro
 
-			auto startOfMacro = it;
+			size_t startOfMacro = idx;
 
 			while(true)
 			{
-				it++;
-				line = *it;
+				if(idx == output.size()-1) compile_error(output[startOfMacro].line, "Unfinished macro: %s", name.c_str());
 
-				if(line.content[0] == '#' && find_string(line.content, "#endmacro", "") != std::string::npos) break;
+				idx++;
+				// line = output[idx];  NOTE: Fuck you
+				Line &currentLine = output[idx];
 
-				macros[name].push_back(line.content);
+				if(line.content[0] == '#' && find_string(currentLine.content, "#endmacro", "") != std::string::npos) break;
+
+				macros[name].push_back(currentLine.content);
 			}
 
 			if(macros[name].size() == 0)
 			{
-				compile_error(line.line, "Empty macro %s", name.c_str()); // DONE: Line numbers 
+				compile_error(output[idx].line, "Empty macro: %s", name.c_str()); // DONE: Line numbers 
 			}
 
-			// std::cout << "Defined: \"" << name << "\n";
+			output.erase(output.begin() + startOfMacro, output.begin() + idx + 1); // Erase #macro, body and #endmacro
 
-			it = output.erase(startOfMacro, it + 1) - 1;
-		}
-		else
-		{
-			search_macro(output, it, macros);
+			idx = startOfMacro;
 		}
 
-		it++;
+		idx++;
 	}
 
+	for(idx = 0; idx < output.size(); idx++)
+	{
+		search_macro(output, idx, macros);
+	}
+
+	// TODO: Dealing with single-line macros shouldn't need a wholeass vector
+
 	// Process macro groups
+	std::stack<MacroMap> macrogroups;
+	size_t macrogroupIndex = 0;
+	// Process macro groups
+	idx = 0;
+	while(idx < output.size())
+	{
+		Line &line = output[idx];
+
+		if(line.content.find("#macrogroup") != std::string::npos)
+		{
+			macrogroups.push(MacroMap());
+			
+			MacroMap &current = macrogroups.top();
+			current["GROUP_INDEX"].push_back(std::to_string(++macrogroupIndex));
+			current["GROUP_ID"].push_back(random_string(16));
+
+			output.erase(output.begin() + idx); // Erase gives next element
+			continue;
+		}
+		else if(line.content.find("#endmacrogroup") != std::string::npos)
+		{
+			if(macrogroups.size() == 0) compile_warning(line.line, "Non started macrogroup.");
+			
+			if(macrogroups.size() > 0)
+			{
+				macrogroups.pop();
+
+				output.erase(output.begin() + idx);
+				continue;
+			}
+		}
+		else if(macrogroups.size() > 0)
+		{
+			auto &top = macrogroups.top();
+			search_macro(output, idx, top);
+		}
+
+		idx++;
+	}
 
 	// Process other directives
 }

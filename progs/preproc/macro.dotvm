@@ -1,4 +1,6 @@
 #define NULL 0
+#define AAA 1
+#define ABB 2
 
 #macro ADDTO ; (reg, val)
 	push $#(ARG_1)
@@ -8,6 +10,7 @@
 
 	pop ARG_1
 #endmacro
+
 
 #macro 2SWAP
 	; [a, b, c, d]

@@ -1,0 +1,31 @@
+#macro IF;(val1, op, val2)
+	#macrogroup
+	
+	ifeq ARG_2, ARG_1, ARG_3
+	jump IF_#(GROUP_ID)_TRUE
+
+	jump IF_#(GROUP_ID)_FALSE
+
+	: IF_#(GROUP_ID)_TRUE
+#endmacro
+
+#macro SECOND
+o
+#endmacro
+
+#macro ENDIF
+	: IF_#(GROUP_ID)_FALSE
+
+	#endmacrogroup
+#endmacro
+
+: main
+	
+	#(IF $reg, eq, 0)
+
+	; do stuff
+
+	#(ENDIF)
+
+	mov reg, 0
+	jump ret
