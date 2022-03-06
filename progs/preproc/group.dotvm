@@ -9,10 +9,6 @@
 	: IF_#(GROUP_ID)_TRUE
 #endmacro
 
-#macro SECOND
-o
-#endmacro
-
 #macro ENDIF
 	: IF_#(GROUP_ID)_FALSE
 
