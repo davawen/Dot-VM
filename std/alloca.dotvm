@@ -1,0 +1,87 @@
+#include "if.dotvm"
+
+#define VALUE ARG_1
+
+;; Allocates N bytes from the stack + padding
+;; (n: number) -> pointer
+: alloca
+	
+	div $sp, 8
+	
+	swap
+	push 8
+	swap
+
+	mod
+
+	; [ n/8, n%8 ]
+
+	#(IF $sp, gt, #(VALUE))
+	
+	pop
+	push 1
+	add
+
+	#(ELSE)
+	pop
+	#(ENDIF)
+
+	mov rax, $sp
+	
+	pop rcx
+
+	: alloca_loop
+
+		push 0
+
+		sub $rcx, 1
+		pop rcx
+		
+		ifeq gt, $rcx, 0
+		jump alloca_loop
+	
+	push $rax
+
+	jump ret
+
+; Next feature: decorators
+; Decoration happens after parsing
+; Probably means parsing needs to create an actual AST
+
+; @namespace std
+; : alloca
+
+; DECORATOR @
+; DECORATOR_VALUE namespace
+; DECORATOR_ARG std
+; INSTRUCTION :
+; LITERAL alloca
+
+; namespace is a registered decorator
+; std is namespace name, mangle next literal with that name
+; alloca -> __NAMESPACE_STD_alloca
+
+; call @'std alloca
+
+; DECORATOR @
+; DECORATOR_VALUE '
+; DECORATOR_ARG std
+; LITERAL alloca
+
+; ' is a registered decorator, means scoped access
+; an args is given, so it's a namespace
+; mangle next literal with namespace name
+; -> call __NAMESPACE_STD_alloca
+
+; : someFunction
+;   
+;   ...
+;   
+;   : @' loop
+;     ...
+;     jump @' loop
+
+; Mangle name with top level label...
+
+; @variable name size [attributes]
+; Create static variable...

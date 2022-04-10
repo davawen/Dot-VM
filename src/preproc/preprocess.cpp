@@ -59,137 +59,7 @@ static void iterate_ignore_quotes(std::string &str, int (*func)(std::string &, s
 	iterate_ignore_quotes(str, 0, func);
 }
 
-/// Search string 'str' for the string 'query', which is either have the the given delimeters on its side, or be on the borders of the string 
-/// Returns the index where query starts if it was found, and std::string::npos otherwise
-static size_t find_string(const std::string &str, const std::string &query, const char *delimeters)
-{
-	size_t i = 0;
-	while((i = str.find(query, i)) != std::string::npos)
-	{
-		if((i == 0 || strchr(delimeters, str[i - 1])) && ((i + query.length()) >= str.length() || strchr(delimeters, str[i + query.length()])))
-		{
-			return i;
-		}
-		else
-		{
-			i++;
-		}
-	}
 
-	return std::string::npos;
-}
-
-static std::string random_string( size_t length )
-{
-    auto randchar = []() -> char
-    {
-        const char charset[] =
-        "0123456789"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz";
-        const size_t max_index = (sizeof(charset) - 1);
-        return charset[ rand() % max_index ];
-    };
-    std::string str(length,0);
-    std::generate_n( str.begin(), length, randchar );
-    return str;
-}
-
-void search_macro(std::vector<Line> &output, size_t idx, const MacroMap &macros)
-{
-	Line &line = output[idx];
-
-	for(const auto &[macroName, macro] : macros)
-	{
-		size_t index;
-		if((index = find_string(line.content, macroName, " ,\t")) != std::string::npos)
-		{
-			line.content.erase(index, macroName.length());
-			expand_macro(output, idx, index, macros, macro);
-		}
-		else if((index = line.content.find("#(" + macroName + ")")) != std::string::npos)
-		{
-			line.content.erase(index, macroName.length() + 3);
-			expand_macro(output, idx, index, macros, macro);
-		}
-		else if((index = line.content.find("#(" + macroName)) != std::string::npos)
-		{
-			MacroMap args;
-			size_t macroEnd = line.content.find(')', index); // TODO: Make due for macros in macros
-
-			if(macroEnd == std::string::npos) compile_error(line.line, "Unfinished expansion at macro %s", macroName.c_str());
-
-			//#(MACRO ARG1,ARG2)
-			//↑       ↑
-			//idx     idx+...+3
-			size_t argIdx = 1;
-			size_t argPos = index + macroName.length() + 3;
-
-			while(argPos < macroEnd)
-			{
-				size_t newArgPos = line.content.find(',', argPos);
-
-				if(newArgPos > macroEnd) break;
-				if(newArgPos == argPos) compile_error(line.line, "Empty argument at macro expansion %s", macroName.c_str());
-
-				args[std::string("ARG_") + std::to_string(argIdx)].push_back(line.content.substr(argPos, newArgPos - argPos));
-				
-				argPos = newArgPos + 1;
-				argIdx++;
-			}
-
-			args[std::string("ARG_") + std::to_string(argIdx)].push_back(line.content.substr(argPos, macroEnd - argPos));
-
-			args["NUM_ARGS"].push_back(std::to_string(argIdx));
-			args["MACRO_INDEX"].push_back(macroName);
-			args["MACRO_ID"].push_back(random_string(16));
-
-			line.content.erase(index, macroEnd - index + 1); // +1 to also erase the end parenthese
-
-			expand_macro(output, idx, index, macros, macro, args);
-		}
-	}
-}
-
-void expand_macro(std::vector<Line> &output, size_t idx, const size_t pos, const MacroMap &macros, const Macro &macro)
-{
-
-	Line &line = output[idx];
-
-	line.content.insert(pos, macro[0]);
-
-	if(macro.size() > 1)
-	{
-		output.insert(output.begin() + idx + 1, macro.size() - 1, Line("", line.file, line.line));
-		for(size_t i = 1; i < macro.size(); i++)
-		{
-			output[idx + i].content = macro[i];
-		}
-	}
-}
-
-void expand_macro(std::vector<Line> &output, size_t idx, const size_t pos, const MacroMap &macros, const Macro &macro, const MacroMap &args)
-{
-	Line &line = output[idx];
-
-	line.content.insert(pos, macro[0]);
-
-	if(macro.size() > 1)
-	{
-		output.insert(output.begin() + idx + 1, macro.size() - 1, Line("", line.file, line.line));
-		for(size_t i = 1; i < macro.size(); i++)
-		{
-			output[idx + i].content = macro[i];
-		}
-	}
-
-	for(size_t i = 0; i < macro.size(); i++)
-	{
-		search_macro(output, idx, args);
-
-		idx++;
-	}
-}
 
 void preprocess(const char *filename, std::vector<Line> &output)
 {
@@ -437,4 +307,15 @@ void preprocess(const char *filename, std::vector<Line> &output)
 	}
 
 	// Process other directives
+
+	// Remove empty lines
+	std::vector<Line> trimmedOutput;
+	trimmedOutput.reserve(output.size());
+	
+	for(auto &line : output)
+	{
+		if(!line.content.empty()) trimmedOutput.push_back(std::move(line));
+	}
+
+	output = std::move(trimmedOutput);
 }

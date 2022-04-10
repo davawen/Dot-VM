@@ -9,19 +9,14 @@
 	: IF_#(GROUP_ID)_TRUE
 #endmacro
 
-#macro ENDIF
+#macro ELSE
+	jump IF_#(GROUP_ID)_END
+
 	: IF_#(GROUP_ID)_FALSE
+#endmacro
+
+#macro ENDIF
+	: IF_#(GROUP_ID)_END
 
 	#endmacrogroup
 #endmacro
-
-: main
-	
-	#(IF $reg, eq, 0)
-
-	; do stuff
-
-	#(ENDIF)
-
-	mov reg, 0
-	jump ret
