@@ -1,7 +1,5 @@
 #include "if.dotvm"
 
-#define VALUE ARG_1
-
 ;; Allocates N bytes from the stack + padding
 ;; (n: number) -> pointer
 : alloca
@@ -16,7 +14,7 @@
 
 	; [ n/8, n%8 ]
 
-	#(IF $sp, gt, #(VALUE))
+	#(IF $sp, gt, 0)
 	
 	pop
 	push 1

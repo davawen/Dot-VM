@@ -44,7 +44,9 @@ Instruction::Type Instruction::name_to_type(const char *name)
 
 	if(hashTable.find(currentHash) == hashTable.end())
 	{
-		compile_error(0, 0, "Instruction type does not exist. Got: %s", name); // Program exits here
+		using namespace std::literals::string_view_literals;
+
+		compile_error(0, "Instruction type does not exist. Got: {}"sv, name); // Program exits here
 		return Instruction::Type::AND; // Make compiler happy
 	}
 	
@@ -83,7 +85,9 @@ const char *Instruction::type_to_name(Instruction::Type type)
 
 	if(hashTable.find(type) == hashTable.end())
 	{
-		compile_error(0, 0, "Instruction type does not exist. Got: %i", static_cast<int>(type));
+		using namespace std::literals::string_view_literals;
+
+		compile_error(0, "Instruction type does not exist. Got: {}"sv, static_cast<int>(type));
 	}
 
 	return hashTable.at(type);

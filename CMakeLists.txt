@@ -27,7 +27,8 @@ file(GLOB_RECURSE SOURCE_FILES
 # Add header files
 file(GLOB_RECURSE HEADER_FILES 
 	${CMAKE_SOURCE_DIR}/include/*.h
-	${CMAKE_SOURCE_DIR}/include/*.hpp)
+	${CMAKE_SOURCE_DIR}/include/*.hpp
+	${CMAKE_SOURCE_DIR}/include/*.tpp)
 
 add_executable(${PROJECT_NAME} ${HEADER_FILES} ${SOURCE_FILES})
 
@@ -35,6 +36,8 @@ add_executable(${PROJECT_NAME} ${HEADER_FILES} ${SOURCE_FILES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
 # Libraries
+find_package(fmt)
+target_link_libraries(${PROJECT_NAME} fmt::fmt)
 
 # Compilation
 
