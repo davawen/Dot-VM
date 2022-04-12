@@ -65,7 +65,7 @@ void preprocess(const char *filename, std::vector<Line> &output)
 {
 	if(!read_file(filename, output))
 	{
-		compile_error(0, "Source file does not exists: %s", filename); // This is checked in main but oh well
+		compile_error(0, fmt::format("Source file does not exists: {}", filename)); // This is checked in main but oh well
 	}
 	
 	std::string filenameDirectory = filename;
@@ -104,7 +104,7 @@ void preprocess(const char *filename, std::vector<Line> &output)
 
 				if(!read_file(includeFile.c_str(), include_output))
 				{
-					compile_error(line.line, "Included file does not exists: %s", includeFile.c_str());
+					compile_error(line, fmt::format("Included file does not exists: {}", includeFile));
 				}
 
 				it = output.erase(it);
@@ -234,7 +234,7 @@ void preprocess(const char *filename, std::vector<Line> &output)
 
 			while(true)
 			{
-				if(idx == output.size()-1) compile_error(output[startOfMacro].line, "Unfinished macro: %s", name.c_str());
+				if(idx == output.size()-1) compile_error(output[startOfMacro], fmt::format("Unfinished macro: {}", name));
 
 				idx++;
 				// line = output[idx];  NOTE: Fuck you
@@ -247,7 +247,7 @@ void preprocess(const char *filename, std::vector<Line> &output)
 
 			if(macros[name].size() == 0)
 			{
-				compile_error(output[idx].line, "Empty macro: %s", name.c_str()); // DONE: Line numbers 
+				compile_error(output[idx], fmt::format("Empty macro: {}", name)); // DONE: Line numbers 
 			}
 
 			output.erase(output.begin() + startOfMacro, output.begin() + idx + 1); // Erase #macro, body and #endmacro

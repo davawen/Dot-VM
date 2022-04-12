@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <unordered_map>
+#include <fmt/format.h>
 
 #include "hash.hpp"
 #include "error_handling.hpp"

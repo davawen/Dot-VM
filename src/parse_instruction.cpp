@@ -16,7 +16,7 @@ char *handle_escape_sequences(char *str)
 		{
 			chr = str[++index];
 
-			if(chr == '\0') compile_error(0, 0, "Unterminated escape sequence"); // TODO: Figure out how to pass line / char number appropriately
+			if(chr == '\0') compile_error(0, "Unterminated escape sequence"); // TODO: Figure out how to pass line / char number appropriately
 			
 			switch(chr)
 			{
@@ -343,7 +343,7 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Statement> &stat
 								args[argIdx].val = static_cast<intptr_t>(Register::SP);
 								break;
 							default:
-								compile_error(curToken.line, "Uknown register: %s", curToken.value.c_str());
+								compile_error(curToken.line, fmt::format("Uknown register: {}", curToken.value));
 								break;
 						}
 
@@ -353,7 +353,7 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Statement> &stat
 					}
 					break;
 				default:
-					compile_error(curToken.line, "Unexpected token encountered: %i, %s", curToken.type, curToken.value.c_str());
+					compile_error(curToken.line, fmt::format("Unexpected token encountered: {}, {}", curToken.type, curToken.value));
 					break;
 			}
 		}

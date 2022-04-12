@@ -157,7 +157,7 @@ void interpret(std::vector<Statement> &statements)
 		using namespace std::literals::string_view_literals;
 
 		// TODO: Check this at compile time
-		compile_error(0, "No entry point (.start label)"sv);
+		compile_error(0, "No entry point (.start label)");
 	}
 	
 	std::stack<std::vector<Statement>::iterator> callstack;

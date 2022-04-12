@@ -63,7 +63,7 @@ void search_macro(std::vector<Line> &output, size_t idx, const MacroMap &macros)
 
 			// #( MACRO #( ANOTHER_MACRO 1 ) 3 4 )
 
-			if(macroEnd == std::string::npos) compile_error(line.line, "Unfinished expansion at macro %s", macroName.c_str());
+			if(macroEnd == std::string::npos) compile_error(line, fmt::format("Unfinished expansion at macro {}", macroName));
 
 			//#(MACRO ARG1,ARG2)
 			//↑       ↑
@@ -76,7 +76,7 @@ void search_macro(std::vector<Line> &output, size_t idx, const MacroMap &macros)
 				size_t newArgPos = line.content.find(',', argPos);
 
 				if(newArgPos > macroEnd) break;
-				if(newArgPos == argPos) compile_error(line.line, "Empty argument at macro expansion %s", macroName.c_str());
+				if(newArgPos == argPos) compile_error(line, fmt::format("Empty argument at macro expansion %s", macroName));
 
 				args[std::string("ARG_") + std::to_string(argIdx)].push_back(line.content.substr(argPos, newArgPos - argPos));
 				
