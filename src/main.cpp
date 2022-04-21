@@ -19,7 +19,8 @@
 #include "preproc/preprocess.hpp"
 #include "preproc/line.hpp"
 
-#include "parse_instruction.hpp"
+#include "parser/tokenize.hpp"
+#include "parser/parse_instruction.hpp"
 
 #include "interpreter.hpp"
 

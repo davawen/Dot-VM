@@ -7,9 +7,9 @@
 #include <unistd.h>
 #include <cinttypes>
 
+#include "parser/parse_instruction.hpp"
 #include "value.hpp"
 #include "statement.hpp"
-#include "parse_instruction.hpp"
 #include "hash.hpp"
 
 void interpret(std::vector<Statement> &statements);

@@ -9,13 +9,23 @@ void search_macro(std::vector<Line> &output, size_t idx, const MacroMap &macros)
 		size_t index;
 		if((index = find_string(line.content, macroName, " ,\t")) != std::string::npos)
 		{
+			MacroMap args;
+
+			args["MACRO_INDEX"].push_back(macroName);
+			args["MACRO_ID"].push_back(random_string(16));
+
 			line.content.erase(index, macroName.length());
-			expand_macro(output, idx, index, macro);
+			expand_macro(output, idx, index, macro, args);
 		}
 		else if((index = line.content.find("#(" + macroName + ")")) != std::string::npos)
 		{
+			MacroMap args;
+
+			args["MACRO_INDEX"].push_back(macroName);
+			args["MACRO_ID"].push_back(random_string(16));
+
 			line.content.erase(index, macroName.length() + 3);
-			expand_macro(output, idx, index, macro);
+			expand_macro(output, idx, index, macro, args);
 		}
 		else if((index = line.content.find("#(" + macroName)) != std::string::npos)
 		{
@@ -99,7 +109,6 @@ void search_macro(std::vector<Line> &output, size_t idx, const MacroMap &macros)
 
 void expand_macro(std::vector<Line> &output, size_t idx, const size_t pos, const Macro &macro)
 {
-
 	Line &line = output[idx];
 
 	line.content.insert(pos, macro[0]);
@@ -128,7 +137,6 @@ void expand_macro(std::vector<Line> &output, size_t idx, const size_t pos, const
 			output[idx + i].content = macro[i];
 		}
 	}
-
 	for(size_t i = 0; i < macro.size(); i++)
 	{
 		search_macro(output, idx, args);

@@ -11,7 +11,7 @@
 
 #include "preproc/line.hpp"
 
-// This can probably changed to throw a custom exception
+// TODO: Throw a custom exception instead of this
 
 void compile_warning(int line, const std::string &output);
 void compile_warning(const Line &line, const std::string &output);
