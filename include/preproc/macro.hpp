@@ -5,8 +5,8 @@
 #include <unordered_map>
 
 #include "error_handling.hpp"
+#include "string_functions.hpp"
 #include "preproc/line.hpp"
-#include "preproc/string_functions.hpp"
 
 typedef std::vector<std::string> Macro;
 typedef std::unordered_map<std::string, Macro> MacroMap;

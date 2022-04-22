@@ -1,4 +1,4 @@
-: fibo; (int n) -> int 
+: fibo; (int n) -> int ;
 	ifeq le, $sp, 1
 	jump ret
 	
@@ -20,7 +20,7 @@
 	: loop
 		push $reg
 		call fibo
-		print $sp, "\n"
+		print "From: ", $reg, ", to: ", $sp, "\n"
 		pop
 
 		add $reg, 1

@@ -7,7 +7,7 @@ void search_macro(std::vector<Line> &output, size_t idx, const MacroMap &macros)
 	for(const auto &[macroName, macro] : macros)
 	{
 		size_t index;
-		if((index = find_string(line.content, macroName, " ,\t")) != std::string::npos)
+		if((index = find_delimited_string(line.content, macroName, " ,\t")) != std::string::npos)
 		{
 			MacroMap args;
 

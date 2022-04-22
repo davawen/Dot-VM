@@ -3,7 +3,6 @@
 #include <stdexcept>
 
 #include <cstdio>
-#include <cstdlib>
 #include <cstdarg>
 
 #include <fmt/format.h>
@@ -11,6 +10,14 @@
 
 #include "preproc/line.hpp"
 
+#ifndef FMT_TRACE
+#define FMT_TRACE(fmtstring, ...) \
+	do { \
+		fmt::print("{}({}): ", __FILE__, __LINE__); \
+		fmt::print(fmtstring, __VA_ARGS__); \
+	} while(0)
+#endif
+	
 // TODO: Throw a custom exception instead of this
 
 void compile_warning(int line, const std::string &output);

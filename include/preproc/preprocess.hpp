@@ -11,8 +11,8 @@
 #include <cstring>
 
 #include "error_handling.hpp"
+#include "string_functions.hpp"
 #include "preproc/line.hpp"
 #include "preproc/macro.hpp"
-#include "preproc/string_functions.hpp"
 
-void preprocess(const char *filename, std::vector<Line> &output);
+std::vector<Line> preprocess(const char *filename);

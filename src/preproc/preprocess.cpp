@@ -1,4 +1,5 @@
 #include "preproc/preprocess.hpp"
+#include "string_functions.hpp"
 
 /// Dumps the given file line by line to 'output'.
 /// Returns false if there was an error when opening the file and true otherwise.
@@ -20,49 +21,12 @@ static bool read_file(const char *filename, std::vector<Line> &output)
 	return true;
 }
 
-/// Iterates over a string and calls a function for every characters in it, but ignores anything wrapped in double quotes
-/// @param func Function used. Non zero return value indicates to break out of loop
-static void iterate_ignore_quotes(std::string &str, size_t pos, int (*func)(std::string &, size_t &))
+
+
+std::vector<Line> preprocess(const char *filename)
 {
-	bool inQuotes = false;
+	std::vector<Line> output;
 
-	while(pos < str.length())
-	{
-		if(inQuotes)
-		{
-			if(str[pos] == '\\')
-			{
-				pos++;
-			}
-			else if(str[pos] == '\"')
-			{
-				inQuotes = false;
-			}
-		}
-		else if(str[pos] == '"')
-		{
-			inQuotes = true;
-		}
-		else
-		{
-			int res = func(str, pos);
-
-			if(res != 0) break;
-		}
-
-		pos++;
-	} 
-}
-
-static void iterate_ignore_quotes(std::string &str, int (*func)(std::string &, size_t &))
-{
-	iterate_ignore_quotes(str, 0, func);
-}
-
-
-
-void preprocess(const char *filename, std::vector<Line> &output)
-{
 	if(!read_file(filename, output))
 	{
 		compile_error(0, fmt::format("Source file does not exists: {}", filename)); // This is checked in main but oh well
@@ -131,7 +95,7 @@ void preprocess(const char *filename, std::vector<Line> &output)
 			{
 				if(content[i] == ';')
 				{
-					content.erase(i);
+					content.erase(i); // from i to end of string
 					return 1;
 				}
 
@@ -157,14 +121,14 @@ void preprocess(const char *filename, std::vector<Line> &output)
 		iterate_ignore_quotes(line.content,
 			[](std::string &content, size_t &i)
 			{
-				// Remove this space if previous character is one of those
+				// Remove this space if previous character is ',' or '('
 				if(isblank(content[i]) && (strchr(",(", content[i-1]) || isblank(content[i-1])))
 				{
 					content.erase(i, 1);
 					i--;
 				}
 
-				// Remove this space if next character is one of those
+				// Remove this space if next character is ',' or ')'
 				if(isblank(content[i]) && i < content.length()-1 && strchr(",)", content[i+1]))
 				{
 					content.erase(i, 1);
@@ -240,7 +204,7 @@ void preprocess(const char *filename, std::vector<Line> &output)
 				// line = output[idx];  NOTE: Fuck you
 				Line &currentLine = output[idx];
 
-				if(line.content[0] == '#' && find_string(currentLine.content, "#endmacro", "") != std::string::npos) break;
+				if(line.content[0] == '#' && find_delimited_string(currentLine.content, "#endmacro", "") != std::string::npos) break;
 
 				macros[name].push_back(currentLine.content);
 			}
@@ -307,6 +271,7 @@ void preprocess(const char *filename, std::vector<Line> &output)
 	}
 
 	// Process other directives
+	//TODO: ifdef, ifndef, ifeq, ifneq and derivatives
 
 	// Remove empty lines
 	std::vector<Line> trimmedOutput;
@@ -317,5 +282,5 @@ void preprocess(const char *filename, std::vector<Line> &output)
 		if(!line.content.empty()) trimmedOutput.push_back(std::move(line));
 	}
 
-	output = std::move(trimmedOutput);
+	return trimmedOutput;
 }

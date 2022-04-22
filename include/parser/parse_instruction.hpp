@@ -20,4 +20,4 @@ char *handle_escape_sequences(char *str);
 /// Takes a list of tokens and parses it into compilable / interpretable expressions
 /// 
 /// Outputs the resulting expressions to the 'expressions' vector
-void parse_instructions(std::vector<Token> &tokens, std::vector<Statement> &statements);
+std::vector<Statement> parse_instructions(std::vector<Token> &tokens);

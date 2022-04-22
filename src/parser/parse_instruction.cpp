@@ -69,13 +69,16 @@ char *handle_escape_sequences(char *str)
 
 
 /// DONE: Split this into a lexing step and a parsing step
-void parse_instructions(std::vector<Token> &tokens, std::vector<Statement> &statements)
+std::vector<Statement> parse_instructions(std::vector<Token> &tokens)
 {
+	std::vector<Statement> statements;
+	statements.reserve(32);
+
 	unsigned long idx = 0;
 
 	while(idx < tokens.size())
 	{
-		Token &token = tokens[idx++];
+		Token &instructionToken = tokens[idx++];
 		
 		int numArgs = 0;
 		while( tokens[idx + numArgs].type != Token::NEWLINE )
@@ -83,7 +86,7 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Statement> &stat
 			numArgs++;
 		}
 
-		Instruction::Type instructionType = Instruction::name_to_type(token.value);
+		Instruction::Type instructionType = Instruction::name_to_type(instructionToken.value);
 		Value *args = numArgs > 0 ? new Value[numArgs] : nullptr;
 		int argIdx = 0;
 
@@ -147,7 +150,7 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Statement> &stat
 								args[argIdx].val = static_cast<intptr_t>(Register::SP);
 								break;
 							default:
-								compile_error(curToken.line, fmt::format("Uknown register: {}", curToken.value));
+								compile_error(*curToken.line, fmt::format("Uknown register: {}", curToken.value));
 								break;
 						}
 
@@ -157,7 +160,7 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Statement> &stat
 					}
 					break;
 				default:
-					compile_error(curToken.line, fmt::format("Unexpected token encountered: {}, {}", curToken.type, curToken.value));
+					compile_error(*curToken.line, fmt::format("Unexpected token encountered: {}, {}", curToken.type, curToken.value));
 					break;
 			}
 		}
@@ -166,6 +169,8 @@ void parse_instructions(std::vector<Token> &tokens, std::vector<Statement> &stat
 			
 		idx += numArgs + 1; // args + new line
 	}
+
+	return statements;
 
 	// TODO: Type checking
 }

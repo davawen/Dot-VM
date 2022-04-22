@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "preproc/line.hpp"
+
 struct Token
 {
 	enum Type
@@ -16,24 +18,21 @@ struct Token
 
 	std::string value;
 
-	/// Length of the string 'value'
-	
-	int line;
-	int pos;
+	/// Observer pointer to the line this token comes from
+	const Line *line;
 
 	Token()
 	{
 		this->type = Type::INSTRUCTION;
 		this->value = "";
-		this->line = 0;
-		this->pos = 0;
+		this->line = nullptr;
 	}
 
-	Token(Type type, std::string value, int line, int pos)
+	Token(Type type, std::string value, const Line *line)
 	{
 		this->type = type;
 		this->value = value;
 		this->line = line;
-		this->pos = pos;
+		// this->pos = pos;
 	}
 };

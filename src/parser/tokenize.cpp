@@ -1,171 +1,70 @@
 #include "parser/tokenize.hpp"
 
-void tokenize(const char *filename, std::vector<Token> &tokens)
+std::vector<Token> tokenize(const std::vector<Line> &input)
 {
-	FILE *fp = fopen(filename, "r");
-	
-	fseek(fp, 0L, SEEK_END);
-	size_t fileSize = ftell(fp);
-	rewind(fp);
-	
-	// Initialize buffer to NULL
-	char *buffer = new char[fileSize + 1];
-	memset(buffer, '\0', fileSize + 1);
+	std::vector<Token> tokens;
 
-	char chr;
-	// Copy file to buffer
+	for(auto &line : input)
 	{
-		// Preliminary parsing
-		// Remove duplicate spaces and comments
-		// Evaluate escape sequences
-		bool wasBlank = false, inQuotation = false, inComment = false, startOfLine = false;
+		if(line.content.empty()) continue;
 		
-		int index = 0;
-		while((chr = fgetc(fp)) != EOF) // Get new char and check if we reached end of file
+		// valid lines:
+		// <empty>
+		// instruction_name|
+		// instruction_name arg|
+		// instruction_name arg1,...,argn|
+
+		size_t tokenIndex = line.content.find(' ');
+		
+		std::string instructionName = line.content.substr(0, tokenIndex);
+		tokens.push_back( Token( Token::INSTRUCTION, instructionName, &line ) );
+
+		if(tokenIndex == std::string::npos) // No arguments given
 		{
-		
-			if(chr == ';' && !inQuotation)
-			{
-				inComment = true;
-			}
-			else if(chr == '\n')
-			{
-				inComment = false;
-				
-				startOfLine = true;
-
-				buffer[index++] = chr;
-				continue;
-			}
-
-			if(!inQuotation && !inComment)
-			{
-				bool isBlank = isblank(chr);
-
-				if(isBlank && (wasBlank || startOfLine)) continue;
-				else if(isBlank && !wasBlank) wasBlank = true;
-				else wasBlank = false;
-								
-				startOfLine = false;
-				buffer[index++] = chr;
-			}
-			else if(inQuotation) buffer[index++] = chr;
-			
-			if(chr == '\"' && !inComment)
-			{
-				inQuotation = !inQuotation;
-			}
+			tokens.push_back( Token(Token::NEWLINE, "\n", &line ) );
+			continue;
 		}
 
-		// buffer[index] = '\0';
-	}
-	
-	fclose(fp);
-	
-	char *next = NULL;
-	char *first = strtok_r(buffer, "\n", &next);
-	
-	// TODO: Change this to reflect real file positions
-	// Maybe using some sort of spacing map ?
-	int line = 1;
-	do
-	{
-		char *part;
-		char *posn = NULL;
-		
-		int pos = 0;
-		//Loops over the string to find the amount of arguments, and cleans up trailing spaces / commas
-		// int instructionLength = next - first;
+		size_t argIndex = find_ignore_quotes(line.content, ',', tokenIndex);
+		// if(argIndex != std::string::npos) fmt::print("\nFound ',' here:\n{}\n{:>{}}\n", line.content, '^', argIndex + 1);
 
-		// TODO: Move this shit to reading
-		char *instructionPtr = first;
-		while((chr = *instructionPtr++))
-		{
-			switch(chr)
-			{
-				case ' ':
-					if(*instructionPtr == '\0') // Remove trailing space
-					{
-						*(instructionPtr-1) = '\0';
-					}
-					break;
-				case ',':
-					if(*instructionPtr == '\0')
-					{
-						*(instructionPtr-1) = '\0';
-						break;
-					}
-					
-					if(*instructionPtr == ' ')
-					{
-						// Move everything to the right of instruction ptr one byte to the left (overwrite space)
-						memmove(instructionPtr, instructionPtr + 1, next - instructionPtr); 
-					}
-					break;
-			}
-		}
-		
-		// printf("Num Args: %i\n", numArgs);
-		
-		part = strtok_r(first, " ", &posn); // <- This give the name of the instruction
-		
-		if(part == NULL) continue; // Empty line
-		
-		// printf("\x1b[1m\x1b[93m[%s]\x1b[0m\n", part);
+		// Token index is pointing to a space, this makes it point to the start of the first argument
+		tokenIndex++; 
 
-		tokens.push_back( Token( Token::INSTRUCTION, std::string(part), line, pos ) );
-		
-		pos = posn - first;
-		part = strtok_r(NULL, ",", &posn); // <- Then it gets the arguments
-		
-		while(part != NULL)
+		while(tokenIndex < line.content.length())
 		{
+			auto argStr = string_slice(line.content, tokenIndex, argIndex);
+
 			Token::Type tokenType;
 			
-			while(part[0] == '$')
+			while(argStr[0] == '$')
 			{
-				tokens.push_back( Token( Token::OPERATOR, "$", line, pos ) );
+				tokens.push_back( Token( Token::OPERATOR, "$", &line ) );
 
-				part++;
-				pos++;
+				tokenIndex++;
+				argStr = argStr.substr(1); // Remove first character from string
 			}
 
-			// DONE: Move escape sequences somewhere else to make this work
-			if(part[0] == '\"') // overwrite quotation marks if it's a string
+			// DONE: Move escape sequences to parsing
+			if(argStr[0] == '\"') // if it has a string
 			{
-				part++;
-				char *ptr = part;
-				while(*(++ptr + 1));
-				
-				while(*ptr != '\"') // in case a ',' is in the string
-				{
-					char *newPart = strtok_r(NULL, ",", &posn);
-					
-					if(newPart == NULL)
-					{
-						compile_error(line, "Non-terminated string.");
-					}
-					
-					// NOTE: This doesn't move anything, just replace the NUL at the end of part with a colon
-					// NOTE: So, this could just be replaced by *(newPart - 1) = ','
-					part = strcat(part, newPart);
-					
-					//ptr = part; // NOTE: This is stupid, it means I'm retraversing the entire string for no fucking reason
-					while(*(++ptr + 1));
-				}
-				*(ptr) = '\0'; // reduce length by 1
+				if(argStr.back() != '\"') compile_error(line, fmt::format("Unfinished string at argument: {}", argStr));
+
+				argStr = string_slice(argStr, 1, argStr.length() - 1); // Remove the quotes at either end
 				
 				tokenType = Token::STRING;
 			}
-			else // DONE: deal with registers (sorta)
+			else // DONE: Differentiate numbers from literals
 			{
+				auto argCStr = argStr.c_str();
 				char *endPtr;
-				bool isNum = false;
 				
 				// TODO: add overflow check
-				/*int num = */strtoll(part, &endPtr, 0);
+				strtoll(argCStr, &endPtr, 0);
 				
-				isNum = endPtr != part && *endPtr == '\0';
+				// From `man strtol`
+				// If endptr is not NULL, strtol() stores the address of the first invalid character in *endptr.  If there were no digits at all, strtol() stores the original value of nptr in *endptr (and returns 0).  In particular, if *nptr is not '\0' but **endptr is '\0' on return, the entire string is valid.
+				bool isNum = endPtr != argCStr && *endPtr == '\0';
 
 				if(isNum) // Number
 				{
@@ -178,21 +77,15 @@ void tokenize(const char *filename, std::vector<Token> &tokens)
 
 			}
 			
-			// printf("\x1b[33m[%s]\x1b[0m\n", part);
-			
-			tokens.push_back( Token( tokenType, std::string(part), line, pos ) );	
-			
-			pos = posn - first;
-			part = strtok_r(NULL, ",", &posn);
+			tokens.push_back( Token( tokenType, argStr, &line ) );	
+		
+			tokenIndex = argIndex == std::string::npos ? argIndex : argIndex + 1;
+			argIndex = find_ignore_quotes(line.content, ',', tokenIndex);
 		}
+		// while(argIndex != std::string::npos);
 
-		tokens.push_back( Token(Token::NEWLINE, "\n", line, pos) );
-
-		line++;
+		tokens.push_back( Token(Token::NEWLINE, "\n", &line ) );
 	}
-	while((first = strtok_r(NULL, "\n", &next)) != NULL);
 	
-	delete[] buffer;
-	
-
+	return tokens;
 }

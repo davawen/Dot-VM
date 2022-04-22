@@ -58,29 +58,25 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	
-	std::vector<Line> list;
-	
-	preprocess(*file, list);
+	std::vector<Line> preprocessed = preprocess(*file);
 
-	for(auto &str : list){ std::cout << str.file << " " << str.line << " | " << str.content << std::endl; }
+	fmt::print("Preprocessed output:\n");
+	//for(auto &str : preprocessed) fmt::print("{}: {} | {}\n", str.file, str.line, str.content);
 
-	return 0;
+	std::vector<Token> tokens = tokenize(preprocessed);
 
-	std::vector<Token> tokens;
+	fmt::print("\nTokenized output:\n");
+	// for(auto &token : tokens)
+	// {
+	// 	//if(token.type == Token::NEWLINE) continue;
 
-	tokenize(*file, tokens);
-
-	for(auto &token : tokens)
-	{
-		if(token.type == Token::NEWLINE) continue;
-
-		printf("Token, type: %i, value: \"%s\", line: %i, pos: %i\n", token.type, token.value.c_str(), token.line, token.pos);
-	}
+	// 	fmt::print("Token type: {}, value: \"{}\", line: {}\n", token.type, token.value, token.line->line);
+	// }
 
 	// Parse file
-	std::vector<Statement> statements;
+	
 
-	parse_instructions(tokens, statements);
+	std::vector<Statement> statements = parse_instructions(tokens);
 	
 
 	printf("\n\n");
