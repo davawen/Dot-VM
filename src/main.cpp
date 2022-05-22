@@ -1,26 +1,26 @@
+#include <algorithm>
+#include <exception>
+#include <filesystem>
 #include <iostream>
-#include <vector>
 #include <list>
 #include <ostream>
-#include <algorithm>
-#include <filesystem>
 #include <stdexcept>
-#include <exception>
+#include <vector>
 
+#include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <cinttypes>
 
 #include "instruction.hpp"
 #include "statement.hpp"
 
-#include "preproc/preprocess.hpp"
 #include "preproc/line.hpp"
+#include "preproc/preprocess.hpp"
 
-#include "parser/tokenize.hpp"
 #include "parser/parse_instruction.hpp"
+#include "parser/tokenize.hpp"
 
 #include "interpreter.hpp"
 
@@ -30,63 +30,62 @@
 
 namespace fs = std::filesystem;
 
-int main(int argc, char **argv)
-{
-	bool *help = flag_bool("help", "Prints this help and exits.", false);
-	
-	const char **file = flag_str("file", "Input file.", NULL);
-	bool *comp = flag_bool("comp", "Wether the program should get compiled. [WIP]", false);
+int main(int argc, char **argv) {
+  bool *help = flag_bool("help", "Prints this help and exits.", false);
 
-	parse_flags(argc, argv);
-	
-	if(*help || argc == 1)
-	{
-		print_help("dot-vm --file FILENAME [--comp]", "Takes a dotvm file and either interpret it or compiles it to a binary.");
+  const char **file = flag_str("file", "Input file.", NULL);
+  bool *comp =
+      flag_bool("comp", "Wether the program should get compiled. [WIP]", false);
 
-		return EXIT_SUCCESS;
-	}
+  parse_flags(argc, argv);
 
-	if(*file == NULL)
-	{
-		printf("Error: no input file recieved.\n");
-		return EXIT_FAILURE;
-	}
-	
-	if(!fs::exists(*file) || !fs::is_regular_file(*file))
-	{
-		printf("Error: incorrect file given.\n");
-		return EXIT_FAILURE;
-	}
-	
-	std::vector<Line> preprocessed = preprocess(*file);
+  if (*help || argc == 1) {
+    print_help("dot-vm --file FILENAME [--comp]",
+               "Takes a dotvm file and either interpret it or compiles it to a "
+               "binary.");
 
-	fmt::print("Preprocessed output:\n");
-	//for(auto &str : preprocessed) fmt::print("{}: {} | {}\n", str.file, str.line, str.content);
+    return EXIT_SUCCESS;
+  }
 
-	std::vector<Token> tokens = tokenize(preprocessed);
+  if (*file == NULL) {
+    printf("Error: no input file recieved.\n");
+    return EXIT_FAILURE;
+  }
 
-	fmt::print("\nTokenized output:\n");
-	// for(auto &token : tokens)
-	// {
-	// 	//if(token.type == Token::NEWLINE) continue;
+  if (!fs::exists(*file) || !fs::is_regular_file(*file)) {
+    printf("Error: incorrect file given.\n");
+    return EXIT_FAILURE;
+  }
 
-	// 	fmt::print("Token type: {}, value: \"{}\", line: {}\n", token.type, token.value, token.line->line);
-	// }
+  std::vector<Line> preprocessed = preprocess(*file);
 
-	// Parse file
-	
+  fmt::print("Preprocessed output:\n");
+  // for(auto &str : preprocessed) fmt::print("{}: {} | {}\n", str.file,
+  // str.line, str.content);
 
-	std::vector<Statement> statements = parse_instructions(tokens);
-	
+  std::vector<Token> tokens = tokenize(preprocessed);
 
-	printf("\n\n");
-	std::for_each(statements.begin(), statements.end(), [](Statement &ins){ std::cout << ins << '\n'; });
-	//
-	
+  fmt::print("\nTokenized output:\n");
+  // for(auto &token : tokens)
+  // {
+  // 	//if(token.type == Token::NEWLINE) continue;
 
-	printf("\n[STARTING EXECUTION FROM HERE]\n\n");
-	//
-	interpret(statements);
+  // 	fmt::print("Token type: {}, value: \"{}\", line: {}\n", token.type,
+  // token.value, token.line->line);
+  // }
 
-	return 0;
+  // Parse file
+
+  std::vector<Statement> statements = parse_instructions(tokens);
+
+  printf("\n\n");
+  std::for_each(statements.begin(), statements.end(),
+                [](Statement &ins) { std::cout << ins << '\n'; });
+  //
+
+  printf("\n[STARTING EXECUTION FROM HERE]\n\n");
+  //
+  interpret(statements);
+
+  return 0;
 }

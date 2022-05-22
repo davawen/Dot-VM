@@ -1,14 +1,16 @@
 #include "preproc/preprocess.hpp"
 #include "string_functions.hpp"
 
+namespace fs = std::filesystem;
+
 /// Dumps the given file line by line to 'output'.
 /// Returns false if there was an error when opening the file and true otherwise.
-static bool read_file(const char *filename, std::vector<Line> &output)
+static bool read_file(const fs::path &filename, std::vector<Line> &output)
 {
-	std::ifstream file(filename);
+	std::ifstream file{filename};
 
 	if(!file.is_open()) return false;
-
+	
 	std::string line;
 	size_t num = 1;
 
@@ -21,26 +23,14 @@ static bool read_file(const char *filename, std::vector<Line> &output)
 	return true;
 }
 
-
-
-std::vector<Line> preprocess(const char *filename)
+static void preprocess_includes(std::vector<Line> &output)
 {
-	std::vector<Line> output;
-
-	if(!read_file(filename, output))
-	{
-		compile_error(0, fmt::format("Source file does not exists: {}", filename)); // This is checked in main but oh well
-	}
-	
-	std::string filenameDirectory = filename;
-	filenameDirectory.erase(filenameDirectory.find_last_of('/') + 1);
-	
 	// Include directives
-	auto it = output.begin();
 	std::unordered_set<std::string> includedFiles;
 
 	// DONE: Heriarchical view of inclusion for error logging (sort of)
 	
+	auto it = output.begin();
 	while(it != output.end())
 	{
 		Line &line = *it;
@@ -52,7 +42,11 @@ std::vector<Line> preprocess(const char *filename)
 			if(line.content.find("#include") != std::string::npos)
 			{
 				// TODO: Make marking files more robust
-				std::string includeFile = line.content.substr(line.content.find("\"") + 1, line.content.rfind("\"") - line.content.find("\"") - 1);
+				fs::path includeFile = line.content.substr(line.content.find("\"") + 1, line.content.rfind("\"") - line.content.find("\"") - 1);
+
+				includeFile = line.file.parent_path() / includeFile;
+				includeFile = includeFile.lexically_normal();
+
 				if(line.content.find("#include_recursive") == std::string::npos && includedFiles.find(includeFile) != includedFiles.end()) // If file already included and not recursive
 				{
 					// Already included
@@ -62,11 +56,9 @@ std::vector<Line> preprocess(const char *filename)
 
 				includedFiles.insert(includeFile);
 
-				includeFile = filenameDirectory + includeFile;
-
 				std::vector<Line> include_output;
 
-				if(!read_file(includeFile.c_str(), include_output))
+				if(!read_file(includeFile, include_output))
 				{
 					compile_error(line, fmt::format("Included file does not exists: {}", includeFile));
 				}
@@ -82,9 +74,21 @@ std::vector<Line> preprocess(const char *filename)
 
 		it++;
 	}
+}
+
+std::vector<Line> preprocess(const fs::path filename)
+{
+	std::vector<Line> output;
+
+	if(!read_file(filename, output))
+	{
+		compile_error(0, fmt::format("Source file does not exists: {}", filename)); // This is checked in main but oh well
+	}
+	
+	preprocess_includes(output);
 	
 	// Remove trailing spaces / comments
-	it = output.begin();
+	auto it = output.begin();
 	while(it != output.end())
 	{
 		Line &line = *it;

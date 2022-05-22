@@ -1,0 +1,7 @@
+#macro ABC
+	print ARG_1, ARG_2
+#endmacro
+
+#define OTHER jump #(ARG_1)-#(ARG_2)
+
+#(ABC arg1, #(OTHER label, abc), arg3, arg4)

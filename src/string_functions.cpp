@@ -82,6 +82,9 @@ void iterate_ignore_quotes(std::string &str, int (*func)(std::string &, size_t &
 
 size_t find_ignore_quotes(const std::string &self, const std::string &target, size_t pos)
 {
+	if(self.empty()) return target.empty() ? 0 : std::string::npos;
+	if(target.length() > self.length()) return std::string::npos;
+
 	bool inQuotation = false;
 
 	// At the end of the iteration, you can't find a string if the remaining space inside self is less than target's length

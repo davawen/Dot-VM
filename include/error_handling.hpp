@@ -8,6 +8,7 @@
 #include <fmt/format.h>
 #include <fmt/color.h>
 
+#include "string_functions.hpp"
 #include "preproc/line.hpp"
 
 #ifndef FMT_TRACE

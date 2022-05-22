@@ -4,6 +4,8 @@
 #include <optional>
 #include <algorithm>
 #include <stdexcept>
+#include <filesystem>
+#include <fmt/format.h>
 
 #include <cstring>
 
@@ -37,3 +39,18 @@ size_t find_ignore_quotes(const std::string &self, const std::string &target, si
 /// @param pos Position from which to start the search
 /// @returns Start index of target character, or std::string::npos if it isn't found
 size_t find_ignore_quotes(const std::string &self, char target, size_t pos = 0);
+
+template <> struct fmt::formatter<std::filesystem::path> {
+	constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin()) {
+		auto it = ctx.begin(), end = ctx.end();
+
+		if (it != end && *it != '}') throw format_error("invalid format");
+
+		return it;
+	}
+
+	template <typename FormatContext>
+	auto format(const std::filesystem::path &path, FormatContext &ctx) -> decltype(ctx.out()) {
+		return format_to(ctx.out(), "{}", path.generic_string());
+	}
+};
