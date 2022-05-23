@@ -7,35 +7,43 @@ void search_macro(std::vector<Line> &output, size_t idx, const MacroMap &macros)
 	std::string &str = line.content;
 
 	// Handle macros which take arguments
-	size_t macro_start;
-	if((macro_start = find_ignore_quotes(str, "#(")) != std::string::npos)
+	size_t macro_start = 0;
+	while((macro_start = find_ignore_quotes(str, "#(", macro_start)) != std::string::npos)
 	{
-		macro_start += 2;
+		size_t name_start = macro_start + 2;
+
+		// fmt::print("Line: {}\n", str);
 
 		// Finding the name of the macro in a first loop is a lot cleaner
-		size_t args_start = 0;
-		std::string_view name;
-		for(size_t i = macro_start; i < str.length(); i++)
+		size_t scope = 1;
+		size_t next_arg = std::string::npos;
+		size_t macro_end = std::string::npos;
+
+		std::string name;
+		for(size_t i = name_start; i < str.length(); i++)
 		{
 			if(str[i] == ' ')
 			{
-				name = std::string_view(&str[macro_start], i - macro_start);
-				args_start = i+1;
+				name = string_slice(str, name_start, i);
+				next_arg = i+1;
 				break;
 			}
 			else if(str[i] == ')')
 			{
-				goto regular_handle;
+				name = string_slice(str, name_start, i);
+				// next_arg = std::string::npos; // Avoid iterating the string to find (non existent) args
+				scope = 0;
+				macro_end = i + 1;
+				break;
 			}
 		}
 
-		fmt::print("Name: {}\n", name);
+		// fmt::print("Name: {}\n", name);
 
-		size_t scope = 1;
-		size_t arg_num = 1;
+		size_t arg_num = 0;
 		MacroMap args;
 
-		for(size_t i = args_start; i < str.length(); i++)
+		for(size_t i = next_arg; i < str.length(); i++)
 		{
 			if(str[i] == '#' && str[++i] == '(')
 			{
@@ -45,11 +53,10 @@ void search_macro(std::vector<Line> &output, size_t idx, const MacroMap &macros)
 			{
 				if(scope == 1)
 				{
-					args["ARG_" + std::to_string(arg_num)].push_back(str.substr(args_start, i - args_start));
+					args["ARG_" + std::to_string(++arg_num)].push_back(string_slice(str, next_arg, i));
 
-					args_start = i + 1;
-
-					arg_num++;
+					next_arg = i + 1;
+					macro_end = next_arg;
 				}
 
 				if(str[i] == ')') scope--;
@@ -59,110 +66,44 @@ void search_macro(std::vector<Line> &output, size_t idx, const MacroMap &macros)
 			if(scope == 0) break;
 		}
 
-		for(auto &[k, v] : args) { fmt::print("{}: {}\n", k, v[0]); }
+		if(scope != 0) compile_error(line, fmt::format("Unfinished macro expansion: {}", name));
 
-		exit(-1);
+		auto macro = macros.find(name);
+
+		if(macro == macros.end())
+		{
+			macro_start = macro_end;
+			continue;
+		}
+
+		// TODO: Currently incompatible with the way args are processed... I think...
+		// Could have checked for invalid name earlier, but it would have probably triggered in the case of an unfinished macro, so it's better to see after it
+		// if(macros.find(name) == macros.end()) compile_error(line, fmt::format("Uknown macro in expansion: {}", name));
+
+		args["NUM_ARGS"].push_back(std::to_string(arg_num));
+		args["MACRO_INDEX"].push_back(name);
+		args["MACRO_ID"].push_back(random_string(16));
+
+		/* for(auto &[k, v] : args) { fmt::print("{}: {}\n", k, v[0]); }
+		fmt::print("\n"); */
+
+		str.erase(macro_start, macro_end - macro_start);
+		expand_macro(output, idx, macro_start, macro->second, args);
 	}
 
-regular_handle:
+	// Handle regular (without guards) macros
 	for(const auto &[macroName, macro] : macros)
 	{
 		size_t index;
-		if((index = find_delimited_string(line.content, macroName, " ,\t")) != std::string::npos)
+		if((index = find_delimited_string(str, macroName, " ,\t")) != std::string::npos)
 		{
 			MacroMap args;
 
+			args["NUM_ARGS"].push_back("0");
 			args["MACRO_INDEX"].push_back(macroName);
 			args["MACRO_ID"].push_back(random_string(16));
 
-			line.content.erase(index, macroName.length());
-			expand_macro(output, idx, index, macro, args);
-		}
-		else if((index = line.content.find("#(" + macroName + ")")) != std::string::npos)
-		{
-			MacroMap args;
-
-			args["MACRO_INDEX"].push_back(macroName);
-			args["MACRO_ID"].push_back(random_string(16));
-
-			line.content.erase(index, macroName.length() + 3);
-			expand_macro(output, idx, index, macro, args);
-		}
-		else if((index = line.content.find("#(" + macroName)) != std::string::npos)
-		{
-			MacroMap args;
-
-			// Recursive search to find the end of the macro
-			// (The same as searching for the end of a block and skipping any block along the way)
-			// size_t macroEnd = line.content.find(')', index); // TODO: Make due for macros in macros
-
-			size_t macroEnd = index + 2;
-			{
-				//    #(IF $reg, lt, #(VALUE))
-				//                          ^
-				//)                         ^
-				//#(                                   ^
-				//level = 1
-
-
-				size_t level = 1;
-				while(level > 0)
-				{
-					size_t nextEndParen = line.content.find(')', macroEnd + 1); // If macroEnd is already on a closing parenthesis, this loops forever
-					size_t nestedMacro = line.content.find("#(", macroEnd);
-
-					if(nextEndParen == std::string::npos)
-					{
-						macroEnd = nextEndParen;
-						break;
-					}
-
-					if(nestedMacro > nextEndParen) // #(MACRO) #(OTHER_MACRO)
-					{
-						macroEnd = nextEndParen;
-						level--;
-					}
-					else // #(MACRO #(OTHER_MACRO))
-					{
-						macroEnd = nestedMacro + 2;
-						level++;
-					}
-				}
-			}
-
-
-
-			// #( MACRO #( ANOTHER_MACRO 1 ) 3 4 )
-
-			if(macroEnd == std::string::npos) compile_error(line, fmt::format("Unfinished expansion at macro {}", macroName));
-
-			//#(MACRO ARG1,ARG2)
-			//↑       ↑
-			//idx     idx+...+3
-			size_t argIdx = 1;
-			size_t argPos = index + macroName.length() + 3;
-
-			while(argPos < macroEnd)
-			{
-				size_t newArgPos = line.content.find(',', argPos);
-
-				if(newArgPos > macroEnd) break;
-				if(newArgPos == argPos) compile_error(line, fmt::format("Empty argument at macro expansion %s", macroName));
-
-				args[std::string("ARG_") + std::to_string(argIdx)].push_back(line.content.substr(argPos, newArgPos - argPos));
-				
-				argPos = newArgPos + 1;
-				argIdx++;
-			}
-
-			args[std::string("ARG_") + std::to_string(argIdx)].push_back(line.content.substr(argPos, macroEnd - argPos));
-
-			args["NUM_ARGS"].push_back(std::to_string(argIdx));
-			args["MACRO_INDEX"].push_back(macroName);
-			args["MACRO_ID"].push_back(random_string(16));
-
-			line.content.erase(index, macroEnd - index + 1); // +1 to also erase the end parenthese
-
+			str.erase(index, macroName.length());
 			expand_macro(output, idx, index, macro, args);
 		}
 	}

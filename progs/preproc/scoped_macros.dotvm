@@ -1,7 +1,12 @@
 #macro ABC
-	print ARG_1, ARG_2
+	print ARG_1
+	print #(ARG_2)
 #endmacro
 
-#define OTHER jump #(ARG_1)-#(ARG_2)
+#macro OTHER
+	jump #(ARG_1)-#(ARG_2)
+#endmacro
 
-#(ABC arg1, #(OTHER label, abc), arg3, arg4)
+#define SOME Some(thing)
+
+#(ABC arg1, #(OTHER label, #(SOME)), arg3, arg4)

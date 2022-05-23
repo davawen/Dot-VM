@@ -2,13 +2,13 @@
 
 void compile_warning(int line, const std::string &output)
 {
-	fmt::print("\n\x1b[43merror:\x1b[0m on line {}:\n", line);
+	fmt::print("\n\x1b[33merror:\x1b[0m on line {}:\n", line);
 	fmt::print("{}\n", output);
 }
 
 void compile_warning(const Line &line, const std::string &output)
 {
-	fmt::print("\n\x1b[43m warning:\x1b[0m in file {}:\n{:>3} | {}\n", line.file, line.line, line.content);
+	fmt::print("\n\x1b[33m warning:\x1b[0m in file {}:\n{:>3} | {}\n", line.file, line.line, line.content);
 	fmt::print("{}\n", output);
 }
 

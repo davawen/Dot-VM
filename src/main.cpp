@@ -34,13 +34,14 @@ int main(int argc, char **argv) {
   bool *help = flag_bool("help", "Prints this help and exits.", false);
 
   const char **file = flag_str("file", "Input file.", NULL);
-  bool *comp =
-      flag_bool("comp", "Wether the program should get compiled. [WIP]", false);
+  bool *only_preprocess = flag_bool("E", "Only shows the preprocessed output without parsing the program if present", false);
+  bool *norun = flag_bool("norun", "Doesn't run the program if present", false);
+  // bool *comp = flag_bool("comp", "Wether the program should get compiled. [WIP]", false);
 
   parse_flags(argc, argv);
 
   if (*help || argc == 1) {
-    print_help("dot-vm --file FILENAME [--comp]",
+    print_help("dot-vm --file FILENAME [flags]",
                "Takes a dotvm file and either interpret it or compiles it to a "
                "binary.");
 
@@ -59,9 +60,13 @@ int main(int argc, char **argv) {
 
   std::vector<Line> preprocessed = preprocess(*file);
 
-  fmt::print("Preprocessed output:\n");
-  // for(auto &str : preprocessed) fmt::print("{}: {} | {}\n", str.file,
-  // str.line, str.content);
+  if(*only_preprocess)
+  {
+	  fmt::print("Preprocessed output:\n");
+	  for(auto &str : preprocessed) fmt::print("{}: {} | {}\n", str.file, str.line, str.content);
+
+	  return 0;
+  }
 
   std::vector<Token> tokens = tokenize(preprocessed);
 
@@ -82,6 +87,8 @@ int main(int argc, char **argv) {
   std::for_each(statements.begin(), statements.end(),
                 [](Statement &ins) { std::cout << ins << '\n'; });
   //
+
+  if(*norun) return 0;
 
   printf("\n[STARTING EXECUTION FROM HERE]\n\n");
   //

@@ -205,7 +205,7 @@ std::vector<Line> preprocess(const fs::path filename)
 				if(idx == output.size()-1) compile_error(output[startOfMacro], fmt::format("Unfinished macro: {}", name));
 
 				idx++;
-				// line = output[idx];  NOTE: Fuck you
+				// line = output[idx];  NOTE: Fuck you reference re-assignment
 				Line &currentLine = output[idx];
 
 				if(line.content[0] == '#' && find_delimited_string(currentLine.content, "#endmacro", "") != std::string::npos) break;
@@ -217,6 +217,7 @@ std::vector<Line> preprocess(const fs::path filename)
 			{
 				compile_error(output[idx], fmt::format("Empty macro: {}", name)); // DONE: Line numbers 
 			}
+			else if(macros[name].size() == 1) compile_warning(line, fmt::format("Singleline macro {} defined with #macro directive could use #define", name));
 
 			output.erase(output.begin() + startOfMacro, output.begin() + idx + 1); // Erase #macro, body and #endmacro
 
