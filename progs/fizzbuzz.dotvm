@@ -1,47 +1,51 @@
-: main
-	mov reg, 0
+#include "../std/if.dotvm"
 
-	: loop
-		mod $reg, 15
-		ifeq ne, $sp, 0
-		jump not_print_fizzbuzz
-		
-		print "FizzBuzz\n"
+: evaluate_num
+	pop rax
+	
+	mod $rax, 15
+	pop reg
 
-		jump finish_print
-		
-		: not_print_fizzbuzz
-		pop
+	#(IF $reg, eq, 0)
+		print "Fizzbuzz\n"
 
-		mod $reg, 3
-		ifeq ne, $sp, 0
-		jump not_print_fizz
-		
-		print "Fizz\n"
-		
-		jump finish_print
-		
-		: not_print_fizz; IMPORTANT: get rid of trailing whitespace, it almost fucked me up big time right here
-		pop
-
-		mod $reg, 5
-		ifeq ne, $sp, 0
-		jump not_print_buzz
-		
-		print "Buzz\n"
-		
-		jump finish_print
-		
-		: not_print_buzz
-		
-		print $reg, "\n"
-
-		: finish_print
-		
-		pop
-		
-		add $reg, 1
+	#(ELSE)
+	
+		mod $rax, 5
 		pop reg
 		
-		ifeq lt, $reg, 100
+		
+		#(IF $reg, eq, 0)
+			print "Fizz\n"
+
+		#(ELSE)
+			
+			mod $rax, 3
+			pop reg
+
+			#(IF $reg, eq, 0)
+				print "Buzz\n"
+			
+			#(ELSE)
+				print $rax, "\n"
+				
+			#(ENDIF)
+
+		#(ENDIF)
+
+	#(ENDIF)
+	
+	jump ret
+
+: main
+	mov rcx, 0
+
+	: loop
+		push $rcx
+		call evaluate_num
+		
+		add $rcx, 1
+		pop rcx
+		
+		ifeq le, $rcx, 100
 		jump loop
