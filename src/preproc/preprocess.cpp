@@ -76,24 +76,10 @@ static void preprocess_includes(std::vector<Line> &output)
 	}
 }
 
-std::vector<Line> preprocess(const fs::path filename)
+static void trim_comments(std::vector<Line> &output)
 {
-	std::vector<Line> output;
-
-	if(!read_file(filename, output))
+	for(auto &line : output)
 	{
-		compile_error(0, fmt::format("Source file does not exists: {}", filename)); // This is checked in main but oh well
-	}
-	
-	preprocess_includes(output);
-	
-	// Remove trailing spaces / comments
-	auto it = output.begin();
-	while(it != output.end())
-	{
-		Line &line = *it;
-		
-		// Remove comments
 		iterate_ignore_quotes(line.content,
 			[](std::string &content, size_t &i)
 			{
@@ -106,7 +92,13 @@ std::vector<Line> preprocess(const fs::path filename)
 				return 0;
 			}
 		);
+	}
+}
 
+static void trim_whitespace(std::vector<Line> &output)
+{
+	for(auto &line : output)
+	{
 		// Remove blanks at the beginning
 		size_t i = 0;
 		while(true)
@@ -157,9 +149,23 @@ std::vector<Line> preprocess(const fs::path filename)
 		{
 			line.content.erase(i + 1);
 		}
-
-		it++;
 	}
+}
+
+std::vector<Line> preprocess(const fs::path filename)
+{
+	std::vector<Line> output;
+
+	if(!read_file(filename, output))
+	{
+		compile_error(0, fmt::format("Source file does not exists: {}", filename)); // This is checked in main but oh well
+	}
+	
+	preprocess_includes(output);
+	
+	// Remove trailing spaces / comments
+	trim_comments(output);
+	trim_whitespace(output);
 
 	// Process macros definitions
 	MacroMap macros;

@@ -43,43 +43,6 @@ size_t find_delimited_string(const std::string &str, const std::string &query, c
 	return std::string::npos;
 }
 
-void iterate_ignore_quotes(std::string &str, size_t pos, int (*func)(std::string &, size_t &))
-{
-	bool inQuotes = false;
-
-	while(pos < str.length())
-	{
-		if(inQuotes)
-		{
-			if(str[pos] == '\\')
-			{
-				pos++;
-			}
-			else if(str[pos] == '\"')
-			{
-				inQuotes = false;
-			}
-		}
-		else if(str[pos] == '"')
-		{
-			inQuotes = true;
-		}
-		else
-		{
-			int res = func(str, pos);
-
-			if(res != 0) break;
-		}
-
-		pos++;
-	} 
-}
-
-void iterate_ignore_quotes(std::string &str, int (*func)(std::string &, size_t &))
-{
-	iterate_ignore_quotes(str, 0, func);
-}
-
 size_t find_ignore_quotes(const std::string &self, const std::string &target, size_t pos)
 {
 	if(self.empty()) return target.empty() ? 0 : std::string::npos;

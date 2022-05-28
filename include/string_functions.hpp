@@ -21,10 +21,41 @@ size_t find_delimited_string(const std::string &str, const std::string &query, c
 
 
 /// Iterates over a string and calls a function for every characters in it, but ignores anything wrapped in double quotes
-/// @param func function used. Non zero return value indicates to break out of loop
-void iterate_ignore_quotes(std::string &str, size_t pos, int (*func)(std::string &, size_t &));
-void iterate_ignore_quotes(std::string &str, int (*func)(std::string &, size_t &));
+/// @param func function used with signature `int(std::string &, size_t &)`. Non zero return value indicates to break out of loop
+template <typename F>
+void iterate_ignore_quotes(std::string &str, F func, size_t pos = 0)
+{
+	static_assert(std::is_invocable<F, std::string &, size_t &>::value, "Invalid function signature passed to iterate_ignore_quotes, must respect int(std::string &, size_t &)");
 
+	bool inQuotes = false;
+
+	while(pos < str.length())
+	{
+		if(inQuotes)
+		{
+			if(str[pos] == '\\')
+			{
+				pos++;
+			}
+			else if(str[pos] == '\"')
+			{
+				inQuotes = false;
+			}
+		}
+		else if(str[pos] == '"')
+		{
+			inQuotes = true;
+		}
+		else
+		{
+			int res = func(str, pos);
+
+			if(res != 0) break;
+		}
+
+		pos++;
+	} 
+}
 
 /// Finds a string inside another, ignoring anything inside double quotes
 /// @param self string which is searched
