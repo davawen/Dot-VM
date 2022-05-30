@@ -343,22 +343,16 @@ It is interacted with through these preprocessor directives:
   #endmacrogroup
   ```
 
-- `#ifdef`/`ifndef` directive, will only insert its body if the given macro is defined / not defined
-
+- `#if`/`#elif` directive, will only insert its body if the given condition is evaluated as true
   ```asm
-  #ifdef MACRO
+  #if MACRO def/ndef
   	; BODY
   #endif
-  ```
 
-- `#ifis` and `#elif`/`#ifnis` and `#elnif` directives, will only insert their body if the macro exists and is equal to the given value. \
-  Note this only works with single line macros.
-
-  ```asm
-  #ifis MACRO VALUE
-  	; BODY
-  #elif MACRO VALUE
-  	; BODY
+  #if MACRO is VALUE
+    ; BODY
+  #elif MACRO nis VALUE
+    ; BODY
   #endif
   ```
 
@@ -379,9 +373,7 @@ Built-in macros:
 -	`__FILE__`: Name of the current file
 -	Only defined in macros:
 	-	`NUM_ARGS`: Number of arguments given
-	-	`ARG_n`: Argument with index n, where n is a number between 0 and `MAX_MACRO_ARGS`
-	-	`MAX_MACRO_ARGS`: Maximum number of arguments which can be given to a macro.
-		Default is 16, but can be adjusted through a compiler flag.
+	-	`ARG_n`: Argument with index n, where n is a number between 1 and `MAX_MACRO_ARGS`
 	-	`MACRO_INDEX`: Unique index given to a macro.
 	-	`MACRO_ID`: Unique identifier given to each expansion of a macro. \
 		This means that between two expansions of the same macro, `MACRO_INDEX` will be equal but not `MACRO_ID`.
@@ -404,7 +396,7 @@ It that case, `#()` will be used :
 Multi-line macro definition:
 ```asm
 #macro JIFEQ ; (label, word, val1, val2)
-	#ifnis NUM_ARGS 4
+	#if NUM_ARGS nis 4
 		#error "Wrong number of arguments given to jifeq"
 	#endif
 	
@@ -416,7 +408,7 @@ Multi-line macro definition:
 
 ; Gets expanded to: 
 ; (trailing spaces are removed)
-#ifnis 4 4
+#if 4 nis 4
 #error "Wrong number of arguments given to jifeq"
 #endif
 
