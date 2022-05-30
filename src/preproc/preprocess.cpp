@@ -235,6 +235,11 @@ std::vector<Line> preprocess(const fs::path filename)
 
 	for(idx = 0; idx < output.size(); idx++)
 	{
+		Line &line = output[idx];
+
+		// Check for if-defs
+		if(line.content.find("#if") || line.content.find("#elif"))
+
 		search_macro(output, idx, macros);
 	}
 
