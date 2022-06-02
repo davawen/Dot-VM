@@ -175,6 +175,7 @@ std::vector<Line> preprocess(const fs::path filename)
 	{
 		Line &line = output[idx];
 
+		// Check for macro definitions
 		size_t pos;
 		if((pos = line.content.find("#define")) != std::string::npos)
 		{
@@ -229,6 +230,13 @@ std::vector<Line> preprocess(const fs::path filename)
 
 			idx = startOfMacro;
 		}
+		
+		// Mark any if-defs with quotes to avoid macro expansions
+		if(is_preproc_condition(line))
+		{
+
+		}
+
 
 		idx++;
 	}
@@ -285,9 +293,6 @@ std::vector<Line> preprocess(const fs::path filename)
 
 		idx++;
 	}
-
-	// Process other directives
-	//TODO: ifdef, ifndef, ifeq, ifneq and derivatives
 
 	// Remove empty lines
 	std::vector<Line> trimmedOutput;

@@ -15,5 +15,6 @@
 #include "string_functions.hpp"
 #include "preproc/line.hpp"
 #include "preproc/macro.hpp"
+#include "preproc/condition.hpp"
 
 std::vector<Line> preprocess(const std::filesystem::path filename);
