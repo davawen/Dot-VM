@@ -76,79 +76,165 @@ static void preprocess_includes(std::vector<Line> &output)
 	}
 }
 
-static void trim_comments(std::vector<Line> &output)
+static void trim_comments(Line &line)
 {
-	for(auto &line : output)
-	{
-		iterate_ignore_quotes(line.content,
-			[](std::string &content, size_t &i)
+	iterate_ignore_quotes(line.content,
+		[](std::string &content, size_t &i)
+		{
+			if(content[i] == ';')
 			{
-				if(content[i] == ';')
-				{
-					content.erase(i); // from i to end of string
-					return 1;
-				}
-
-				return 0;
+				content.erase(i); // from i to end of string
+				return 1;
 			}
-		);
+
+			return 0;
+		}
+	);
+}
+
+static void trim_whitespace(Line &line)
+{
+	// Remove blanks at the beginning
+	size_t i = 0;
+	while(true)
+	{
+		if(!isblank(line.content[i])) break;
+
+		i++;
+	}
+
+	if(i > 0)
+	{
+		line.content.erase(0, i);
+	}
+
+	// Remove blanks between arguments
+	iterate_ignore_quotes(line.content,
+		[](std::string &content, size_t &i)
+		{
+			// Remove this space if previous character is ',' or '('
+			if(isblank(content[i]) && (strchr(",(", content[i-1]) || isblank(content[i-1])))
+			{
+				content.erase(i, 1);
+				i--;
+			}
+
+			// Remove this space if next character is ',' or ')'
+			if(isblank(content[i]) && i < content.length()-1 && strchr(",)", content[i+1]))
+			{
+				content.erase(i, 1);
+				i--;
+			}
+
+			return 0;
+		}
+	);
+
+	// Remove all blanks at the end
+	// Useful for instructions with no arguments
+	i = line.content.length() - 1;
+	while(i > 0 && i < line.content.length()) // Avoid integer overflow if length is 0
+	{
+		if(!isblank(line.content[i])) break;
+
+		i--;
+	}
+
+	if(i > 0 && i < line.content.length() - 1)
+	{
+		line.content.erase(i + 1);
 	}
 }
 
-static void trim_whitespace(std::vector<Line> &output)
+static void get_macro_definition(std::vector<Line> &output, size_t &idx, MacroMap &macros)
 {
-	for(auto &line : output)
+	Line &line = output[idx];
+
+	size_t pos;
+	if((pos = line.content.find("#define")) != std::string::npos)
 	{
-		// Remove blanks at the beginning
-		size_t i = 0;
+		pos += sizeof("#define"); // size of "#define" *with* NUL character, which counts as the space
+
+		size_t posValue = line.content.find(' ', pos);
+
+		// #define MACRO VALUE
+		//         ^pos ^posValue
+
+		std::string name = line.content.substr(pos, posValue - pos);
+
+		macros[name].push_back(line.content.substr(posValue + 1));
+
+		// std::cout << "Defined: \"" << name << "\"\n";
+
+		line.content.clear(); // transform directive into empty line
+	}
+	else if((pos = line.content.find("#macro ")) != std::string::npos) // NOTE: Space is required to not check against #macrogroup
+	{
+		pos += sizeof("#macro");
+		
+		std::string name = line.content.substr(pos);
+
+		//#macro MACRO
+		//  ..
+		//#endmacro
+
+		size_t startOfMacro = idx;
+
 		while(true)
 		{
-			if(!isblank(line.content[i])) break;
+			if(idx == output.size()-1) compile_error(output[startOfMacro], fmt::format("Unfinished macro: {}", name));
 
-			i++;
+			idx++;
+			// line = output[idx];  NOTE: Fuck you reference re-assignment
+			Line &currentLine = output[idx];
+
+			if(line.content[0] == '#' && find_delimited_string(currentLine.content, "#endmacro", "") != std::string::npos) break;
+
+			macros[name].push_back(currentLine.content);
 		}
 
-		if(i > 0)
+		if(macros[name].size() == 0)
 		{
-			line.content.erase(0, i);
+			compile_error(output[idx], fmt::format("Empty macro: {}", name)); // DONE: Line numbers 
 		}
+		else if(macros[name].size() == 1) compile_warning(line, fmt::format("Singleline macro {} defined with #macro directive could use #define", name));
 
-		// Remove blanks between arguments
-		iterate_ignore_quotes(line.content,
-			[](std::string &content, size_t &i)
-			{
-				// Remove this space if previous character is ',' or '('
-				if(isblank(content[i]) && (strchr(",(", content[i-1]) || isblank(content[i-1])))
-				{
-					content.erase(i, 1);
-					i--;
-				}
-
-				// Remove this space if next character is ',' or ')'
-				if(isblank(content[i]) && i < content.length()-1 && strchr(",)", content[i+1]))
-				{
-					content.erase(i, 1);
-					i--;
-				}
-
-				return 0;
-			}
-		);
-
-		// Remove all blanks at the end
-		// Useful for instructions with no arguments
-		i = line.content.length() - 1;
-		while(i > 0 && i < line.content.length()) // Avoid integer overflow if length is 0
+		for(size_t i = startOfMacro; i <= idx; i++)
 		{
-			if(!isblank(line.content[i])) break;
-
-			i--;
+			output[i].content.clear();
 		}
+	}
+}
 
-		if(i > 0 && i < line.content.length() - 1)
+static void process_macro_group(std::vector<Line> &output, size_t &idx, std::stack<MacroMap> &macrogroups, size_t &macrogroup_index)
+{
+	Line &line = output[idx];
+
+	if(line.content.find("#macrogroup") != std::string::npos)
+	{
+		macrogroups.push(MacroMap());
+		
+		MacroMap &current = macrogroups.top();
+		current["GROUP_INDEX"].push_back(std::to_string(++macrogroup_index));
+		current["GROUP_ID"].push_back(random_string(16));
+
+		line.content.clear();
+	}
+	else if(line.content.find("#endmacrogroup") != std::string::npos)
+	{
+		if(macrogroups.size() == 0) compile_warning(line.line, "Non started macrogroup.");
+		
+		if(macrogroups.size() > 0)
 		{
-			line.content.erase(i + 1);
+			macrogroups.pop();
+
+			line.content.clear();
 		}
+	}
+	else if(macrogroups.size() > 0)
+	{
+		auto &top = macrogroups.top();
+		search_macro(output, idx, top);
 	}
 }
 
@@ -160,139 +246,41 @@ std::vector<Line> preprocess(const fs::path filename)
 	{
 		compile_error(0, fmt::format("Source file does not exists: {}", filename)); // This is checked in main but oh well
 	}
-	
-	preprocess_includes(output);
-	
-	// Remove trailing spaces / comments
-	trim_comments(output);
-	trim_whitespace(output);
 
-	// Process macros definitions
+	preprocess_includes(output);
+	for(Line &line : output)
+	{
+		// Remove trailing spaces / comments
+		trim_comments(line);
+		trim_whitespace(line);
+	}
+
 	MacroMap macros;
-	
+
+	std::stack<MacroMap> macrogroups;
+	size_t macrogroup_index = 0;
+
 	size_t idx = 0;
 	while(idx < output.size())
 	{
-		Line &line = output[idx];
+		// Process macros definitions
+		get_macro_definition(output, idx, macros);
 
-		// Check for macro definitions
-		size_t pos;
-		if((pos = line.content.find("#define")) != std::string::npos)
-		{
-			pos += sizeof("#define"); // size of "#define" *with* NUL character, which counts as the space
-
-			size_t posValue = line.content.find(' ', pos);
-
-			// #define MACRO VALUE
-			//         ^pos ^posValue
-
-			std::string name = line.content.substr(pos, posValue - pos);
-
-			macros[name].push_back(line.content.substr(posValue + 1));
-
-			// std::cout << "Defined: \"" << name << "\"\n";
-
-			output.erase(output.begin() + idx); 
-			continue; // idx is now the next element
-		}
-		else if((pos = line.content.find("#macro ")) != std::string::npos) // NOTE: Space is required to not check against #macrogroup
-		{
-			pos += sizeof("#macro");
-			
-			std::string name = line.content.substr(pos);
-
-			//#macro MACRO
-			//  ..
-			//#endmacro
-
-			size_t startOfMacro = idx;
-
-			while(true)
-			{
-				if(idx == output.size()-1) compile_error(output[startOfMacro], fmt::format("Unfinished macro: {}", name));
-
-				idx++;
-				// line = output[idx];  NOTE: Fuck you reference re-assignment
-				Line &currentLine = output[idx];
-
-				if(line.content[0] == '#' && find_delimited_string(currentLine.content, "#endmacro", "") != std::string::npos) break;
-
-				macros[name].push_back(currentLine.content);
-			}
-
-			if(macros[name].size() == 0)
-			{
-				compile_error(output[idx], fmt::format("Empty macro: {}", name)); // DONE: Line numbers 
-			}
-			else if(macros[name].size() == 1) compile_warning(line, fmt::format("Singleline macro {} defined with #macro directive could use #define", name));
-
-			output.erase(output.begin() + startOfMacro, output.begin() + idx + 1); // Erase #macro, body and #endmacro
-
-			idx = startOfMacro;
-		}
+		// Conditions
+		// #if VERSION eq 1.0.0
+		//
+		// #endif
+		// if 
 		
-		// Mark any if-defs with quotes to avoid macro expansions
-		if(is_preproc_condition(line))
-		{
+		// Expand macros
+		search_macro(output, idx, macros);
 
-		}
-
+		process_macro_group(output, idx, macrogroups, macrogroup_index);
 
 		idx++;
-	}
-
-	for(idx = 0; idx < output.size(); idx++)
-	{
-		Line &line = output[idx];
-
-		// Check for if-defs
-		if(line.content.find("#if") || line.content.find("#elif"))
-
-		search_macro(output, idx, macros);
 	}
 
 	// TODO: Dealing with single-line macros shouldn't need a wholeass vector
-
-	// Process macro groups
-	std::stack<MacroMap> macrogroups;
-	size_t macrogroupIndex = 0;
-	// Process macro groups
-	idx = 0;
-	while(idx < output.size())
-	{
-		Line &line = output[idx];
-
-		if(line.content.find("#macrogroup") != std::string::npos)
-		{
-			macrogroups.push(MacroMap());
-			
-			MacroMap &current = macrogroups.top();
-			current["GROUP_INDEX"].push_back(std::to_string(++macrogroupIndex));
-			current["GROUP_ID"].push_back(random_string(16));
-
-			output.erase(output.begin() + idx); // Erase gives next element
-			continue;
-		}
-		else if(line.content.find("#endmacrogroup") != std::string::npos)
-		{
-			if(macrogroups.size() == 0) compile_warning(line.line, "Non started macrogroup.");
-			
-			if(macrogroups.size() > 0)
-			{
-				macrogroups.pop();
-
-				output.erase(output.begin() + idx);
-				continue;
-			}
-		}
-		else if(macrogroups.size() > 0)
-		{
-			auto &top = macrogroups.top();
-			search_macro(output, idx, top);
-		}
-
-		idx++;
-	}
 
 	// Remove empty lines
 	std::vector<Line> trimmedOutput;
