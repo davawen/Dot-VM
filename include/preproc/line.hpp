@@ -1,12 +1,11 @@
 #pragma once
 
-#include <string>
-#include <filesystem>
 #include <cinttypes>
+#include <filesystem>
+#include <string>
 
 // This is wholly inneficient
-struct Line
-{
+struct Line {
 	std::string content;
 	std::filesystem::path file;
 	size_t line;

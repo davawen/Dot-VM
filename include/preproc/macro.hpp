@@ -1,14 +1,15 @@
 #pragma once
 
-#include <vector>
+#include <fmt/core.h>
+
 #include <string>
 #include <string_view>
 #include <unordered_map>
-#include <fmt/core.h>
+#include <vector>
 
 #include "error_handling.hpp"
-#include "string_functions.hpp"
 #include "preproc/line.hpp"
+#include "string_functions.hpp"
 
 typedef std::vector<std::string> Macro;
 typedef std::unordered_map<std::string, Macro> MacroMap;

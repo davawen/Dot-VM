@@ -3,9 +3,9 @@
 #include <string_view>
 
 #include "error_handling.hpp"
-#include "string_functions.hpp"
 #include "preproc/line.hpp"
 #include "preproc/macro.hpp"
+#include "string_functions.hpp"
 
 bool is_preproc_condition(Line &line);
 bool is_preproc_endcondition(Line &line);

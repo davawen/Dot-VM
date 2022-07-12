@@ -1,16 +1,16 @@
-#include <iostream>
-#include <vector>
-#include <stack>
 #include <fmt/format.h>
-
 #include <sys/syscall.h>
 #include <unistd.h>
-#include <cinttypes>
 
-#include "parser/parse_instruction.hpp"
-#include "value.hpp"
-#include "statement.hpp"
+#include <cinttypes>
+#include <iostream>
+#include <stack>
+#include <vector>
+
 #include "hash.hpp"
+#include "parser/parse_instruction.hpp"
+#include "statement.hpp"
+#include "value.hpp"
 
 void interpret(std::vector<Statement> &statements);
 

@@ -1,0 +1,51 @@
+---
+BasedOnStyle: Google
+IndentWidth: 4
+TabWidth: 4
+UseCRLF: false
+UseTab: AlignWithSpaces
+ColumnLimit: 120
+---
+Language: Cpp
+
+IncludeBlocks: Regroup
+IndentAccessModifiers: false
+IndentCaseBlocks: true
+IndentCaseLabels: false
+IndentExternBlock: false
+IndentGotoLabels: false
+IndentPPDirectives: AfterHash
+# IndentRequiresClause: true
+KeepEmptyLinesAtTheStartOfBlocks: false
+LambdaBodyIndentation: Signature
+PPIndentWidth: 2
+PointerAlignment: Right
+QualifierAlignment: Left
+ReferenceAlignment: Right
+
+SortIncludes: CaseInsensitive
+SortUsingDeclarations: false
+
+# SpaceAfterCStyleCast: false
+# SpaceAfterLogicalNot: false
+# SpaceAfterTemplateKeyword: false
+# SpaceAroundPointerQualifiers: Default
+# SpaceBeforeAssignmentOperators: true
+# SpaceBeforeCaseColon: false
+# SpaceBeforeCpp11BracedList: false
+# SpaceBeforeCtorInitializerColon: false
+# SpaceBeforeInheritanceColon: true
+# SpaceBeforeParens: Never
+# SpaceBeforeRangeBasedForLoopColon: true
+# SpaceBeforeSquareBrackets: false
+# SpaceInEmptyBlock: false
+# SpaceInEmptyParentheses: false
+# SpacesInAngles: Never
+# SpacesInCStyleCastParentheses: false
+# SpacesInConditionalStatement: false
+# SpacesInLineCommentPrefix:
+#   Minimum: 1
+#   Maximum: -1
+# SpacesInParentheses: false
+# SpacesInSquareBrackets: true
+# Standard: Auto

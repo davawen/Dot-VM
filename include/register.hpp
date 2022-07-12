@@ -1,7 +1,1 @@
-enum struct Register
-{
-	REG,
-	RAX,
-	RCX,
-	SP
-};
+enum struct Register { REG, RAX, RCX, SP };

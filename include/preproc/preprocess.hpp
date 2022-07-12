@@ -1,20 +1,20 @@
 #pragma once
 
-#include <iostream>
-#include <vector>
-#include <stack>
-#include <string>
-#include <fstream>
-#include <functional>
-#include <unordered_set>
-#include <unordered_map>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 #include "error_handling.hpp"
-#include "string_functions.hpp"
+#include "preproc/condition.hpp"
 #include "preproc/line.hpp"
 #include "preproc/macro.hpp"
-#include "preproc/condition.hpp"
+#include "string_functions.hpp"
 
 std::vector<Line> preprocess(const std::filesystem::path filename);

@@ -1,12 +1,11 @@
-#include <vector>
-
-#include <cstring>
 #include <unistd.h>
 
-#include "preproc/line.hpp"
-#include "parser/token.hpp"
+#include <cstring>
+#include <vector>
 
 #include "error_handling.hpp"
+#include "parser/token.hpp"
+#include "preproc/line.hpp"
 #include "string_functions.hpp"
 
 /// Takes a file and tokenizes it.
