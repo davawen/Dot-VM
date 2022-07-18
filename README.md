@@ -343,7 +343,7 @@ It is interacted with through these preprocessor directives:
   #endmacrogroup
   ```
 
-- `#if`/`#elif` directive, will only insert its body if the given condition is evaluated as true
+- `#if`/`#elif`/`#else` directive, will only insert its body if the given condition is evaluated as true
   ```asm
   #if MACRO def/ndef
   	; BODY

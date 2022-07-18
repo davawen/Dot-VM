@@ -243,7 +243,44 @@ std::vector<Line> preprocess(const fs::path filename) {
 		// #if VERSION eq 1.0.0
 		//
 		// #endif
-		// if
+		size_t pos;
+		if ((pos = output[idx].content.find("#if")) != std::string::npos) {
+			auto &line = output[idx].content;
+
+			auto tokenized = string_split(line, ' ');
+			auto &macro_name = tokenized[1];
+			auto macro_it = macros.find(macro_name);
+			auto macro_value = macro_it == macros.end() ? "" : macro_it->second[0];
+
+			enum { DEF, NOT_DEF, EQUAL, NOT_EQUAL } op;
+			{
+				auto &s_op = tokenized[2];
+				if (s_op == "def")
+					op = DEF;
+				else if (s_op == "ndef")
+					op = NOT_DEF;
+				else if (s_op == "eq")
+					op = EQUAL;
+				else if (s_op == "ne")
+					op = NOT_EQUAL;
+				else
+					compile_error(output[idx], fmt::format("Uknown comparison: {}", s_op));
+			}
+
+			switch (op) {
+			case DEF:
+			case NOT_DEF:
+				fmt::print("Is macro {} {}defined?\n", macro_name, op == NOT_DEF ? "not " : "");
+				break;
+			case EQUAL:
+			case NOT_EQUAL:
+				auto &matching = tokenized[3];
+
+				fmt::print("Is macro {}({}) {} to {}?\n", macro_name, macro_value, op == EQUAL ? "equal" : "not equal",
+				           matching);
+				break;
+			}
+		}
 
 		// Expand macros
 		search_macro(output, idx, macros);

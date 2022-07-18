@@ -8,12 +8,15 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 /// Generates a random alpha-numeric string of the given length
 std::string random_string(size_t length);
 
 /// Takes a slice from a string, from index a to index b
 std::string string_slice(const std::string &self, size_t a, size_t b);
+
+std::vector<std::string> string_split(const std::string &self, char token);
 
 /// Search string 'str' for the string 'query', which is either have the the given delimeters on its side, or be on the
 /// borders of the string

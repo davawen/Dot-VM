@@ -36,6 +36,19 @@ size_t find_delimited_string(const std::string &str, const std::string &query, c
 	return std::string::npos;
 }
 
+std::vector<std::string> string_split(const std::string &self, char token) {
+	std::vector<std::string> out;
+
+	size_t pos = 0;
+	while (pos != std::string::npos) {
+		size_t new_pos = self.find(token, pos + 1);
+		out.push_back(self.substr(pos, new_pos - pos));
+		pos = new_pos == std::string::npos ? new_pos : new_pos + 1;
+	}
+
+	return out;
+}
+
 size_t find_ignore_quotes(const std::string &self, const std::string &target, size_t pos) {
 	if (self.empty()) return target.empty() ? 0 : std::string::npos;
 	if (target.length() > self.length()) return std::string::npos;
