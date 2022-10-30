@@ -25,7 +25,7 @@ void compile_error(const Line &line, const std::string &output) {
 }
 
 void runtime_error(const char *format, ...) {
-	printf("\n\x1b[41mFatal error:\x1b[0m\n");
+	printf("\n\x1b[41mfatal error:\x1b[0m\n");
 
 	va_list argptr;
 	va_start(argptr, format);
@@ -40,7 +40,7 @@ void runtime_error(const char *format, ...) {
 }
 
 void runtime_warning(const char *format, ...) {
-	printf("\n\x1b[43mWarning:\x1b[0m\n");
+	printf("\n\x1b[43mwarning:\x1b[0m\n");
 
 	va_list argptr;
 	va_start(argptr, format);

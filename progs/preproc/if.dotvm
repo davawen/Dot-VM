@@ -1,4 +1,10 @@
-#define _STD 1.2.3
+#define _STD 1.0.0
+#define PLATFORM Linux
+
+: exit
+	mov rax, 0
+	syscall 1, 60
+	jump ret
 
 : main
 	#if _STD def
@@ -7,7 +13,7 @@
 				call exit
 			#endif
 			#if PLATFORM eq Windows
-				extern_call WinExit
+				print "Bruv"
 			#endif
 		#endif
 		#if _STD ne 1.0.0

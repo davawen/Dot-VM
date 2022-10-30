@@ -9,7 +9,7 @@
 	: IF_#(GROUP_ID)_TRUE
 #endmacro
 
-; ELSE can insert itself between and IF and an ENDIF without requiring different macros
+; ELSE can insert itself between an IF and an ENDIF without requiring different macros
 ; that's why it looks a bit weird
 
 #macro ELSE

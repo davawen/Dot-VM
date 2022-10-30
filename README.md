@@ -349,9 +349,9 @@ It is interacted with through these preprocessor directives:
   	; BODY
   #endif
 
-  #if MACRO is VALUE
+  #if MACRO eq VALUE
     ; BODY
-  #elif MACRO nis VALUE
+  #elif MACRO ne VALUE
     ; BODY
   #endif
   ```
@@ -396,7 +396,7 @@ It that case, `#()` will be used :
 Multi-line macro definition:
 ```asm
 #macro JIFEQ ; (label, word, val1, val2)
-	#if NUM_ARGS nis 4
+	#if NUM_ARGS ne 4
 		#error "Wrong number of arguments given to jifeq"
 	#endif
 	
@@ -408,7 +408,7 @@ Multi-line macro definition:
 
 ; Gets expanded to: 
 ; (trailing spaces are removed)
-#if 4 nis 4
+#if NUM_ARGS ne 4
 #error "Wrong number of arguments given to jifeq"
 #endif
 

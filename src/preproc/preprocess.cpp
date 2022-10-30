@@ -236,6 +236,11 @@ std::vector<Line> preprocess(const fs::path filename) {
 
 	size_t idx = 0;
 	while (idx < output.size()) {
+		if (output.empty()) {  // don't bother with all the checks if the line is empty
+			idx++;
+			continue;
+		}
+
 		// Process macros definitions
 		get_macro_definition(output, idx, macros);
 
@@ -243,14 +248,12 @@ std::vector<Line> preprocess(const fs::path filename) {
 		// #if VERSION eq 1.0.0
 		//
 		// #endif
-		size_t pos;
-		if ((pos = output[idx].content.find("#if")) != std::string::npos) {
+		if (output[idx].content.rfind("#if", 0) == 0) {
 			auto &line = output[idx].content;
 
 			auto tokenized = string_split(line, ' ');
 			auto &macro_name = tokenized[1];
 			auto macro_it = macros.find(macro_name);
-			auto macro_value = macro_it == macros.end() ? "" : macro_it->second[0];
 
 			enum { DEF, NOT_DEF, EQUAL, NOT_EQUAL } op;
 			{
@@ -264,27 +267,67 @@ std::vector<Line> preprocess(const fs::path filename) {
 				else if (s_op == "ne")
 					op = NOT_EQUAL;
 				else
-					compile_error(output[idx], fmt::format("Uknown comparison: {}", s_op));
+					compile_error(output[idx], fmt::format("uknown comparison: {}", s_op));
 			}
 
+			bool condition = false;
+			// Check for a given "type" of operation and invert the result for its given contrary
 			switch (op) {
 			case DEF:
 			case NOT_DEF:
-				fmt::print("Is macro {} {}defined?\n", macro_name, op == NOT_DEF ? "not " : "");
+				condition = macro_it != macros.end();
+				if (op == DEF)
+					fmt::print("Is macro {} defined?: {}\n", macro_name, condition ? "yes" : "no");
+				else {
+					condition = !condition;
+					fmt::print("Is macro {} not defined?: {}\n", macro_name, condition ? "yes" : "no");
+				}
 				break;
 			case EQUAL:
 			case NOT_EQUAL:
-				auto &matching = tokenized[3];
+				auto macro_value = std::string();
+				if (macro_it == macros.end())
+					compile_error(output[idx], fmt::format("macro {} not defined", macro_name));
+				else
+					macro_value = macro_it->second[0];
 
-				fmt::print("Is macro {}({}) {} to {}?\n", macro_name, macro_value, op == EQUAL ? "equal" : "not equal",
-				           matching);
+				auto &matching = tokenized[3];
+				condition = macro_value == matching;
+
+				if (op == EQUAL)
+					fmt::print("Is macro {}({}) equal to {}?: {}\n", macro_name, macro_value, matching,
+					           condition ? "yes" : "no");
+				if (op == NOT_EQUAL) {
+					condition = !condition;
+					fmt::print("Is macro {}({}) not equal to {}?: {}\n", macro_name, macro_value, matching,
+					           condition ? "yes" : "no");
+				}
 				break;
+			}
+
+			size_t pos = idx;
+			size_t depth = 1;
+			while (depth != 0) {
+				pos++;
+				if (pos >= output.size()) compile_error(output[idx], "unfinished #if directive");
+				if (output[pos].content.rfind("#if", 0) == 0) depth++;
+				if (output[pos].content.rfind("#endif", 0) == 0) depth--;
+			}  // pos is now at the matching #endif's line
+
+			if (condition) {  // remove the directives
+				output[idx].content.clear();
+				output[pos].content.clear();
+			} else {  // remove the entire body
+				for (auto i = idx; i <= pos; i++) {
+					output[i].content.clear();
+				}
 			}
 		}
 
 		// Expand macros
 		search_macro(output, idx, macros);
 
+		// Expand macrogroup macros
 		process_macro_group(output, idx, macrogroups, macrogroup_index);
 
 		idx++;
